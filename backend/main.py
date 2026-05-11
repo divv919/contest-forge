@@ -1,43 +1,17 @@
 from fastapi import FastAPI, Body
 import os
 import httpx
-from enum import Enum
 from pydantic import BaseModel
 from typing import Annotated
-
+from db.schemas.submission import SubmissionAPI, SubmissionInDB, SubmissionStatusId
+from sqlmodel import SQLModel , Session
+from db.engine import engine
+ 
 app = FastAPI()
 
-
-class SubmissionStatusId(int, Enum):
-    IN_QUEUE = 1
-    PROCESSING = 2
-    AC = 3
-    WA = 4
-    TLE = 5
-    CE = 6
-    RTE_SIGSEGV = 7
-    RTE_SIGXFSZ = 8
-    RTE_SIGFPE = 9
-    RTE_SIGABRT = 10
-    NZEC = 11
-    RTE_OTHER = 12
-    INTERNAL_ERROR = 13
-    EXEC_FORMAT_ERROR = 14
+SQLModel.metadata.create_all(engine)
 
 
-class SubmissionStatus(BaseModel):
-    id : SubmissionStatusId
-    description: str | None = None
-
-class SubmissionResponse(BaseModel):
-    stdout : str | None = None
-    time: str 
-    memory : int
-    stderr: str | None = None
-    token: str
-    compile_output: str | None = None
-    message : str
-    status : SubmissionStatus
 
 
 class SolutionRequest(BaseModel):
@@ -68,7 +42,7 @@ async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
             "language_id": 63,
             "stdin": "\n".join(test_case),
             "expected_output": expected_output,
-            "callback_url": "http://fastapi-start:80/submission_webhook"
+            "callback_url": "http://backend-fastapi-starter-1/submission_webhook"
         } for test_case, expected_output in zip(test_cases, output)]
 
     }
@@ -76,6 +50,14 @@ async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
     async with httpx.AsyncClient() as client:
         res = await  client.post("http://server:2358/submissions/batch",json=data_body )
     response = res.json()
+    # response["status"] = SubmissionStatusId(response["status"]["id"])
+    # submission = SubmissionInDB(**response,source_code=full_source_code)
+    # with Session(engine) as session:
+    #     session.add(submission)
+    #     session.flush()
+    #     print("submission.id is " ,submission.id)
+    #     session.commit()
+
     return response
 
 @app.get("/health")
@@ -84,6 +66,7 @@ async def health_check():
     return "OK 13"
 
 @app.put("/submission_webhook")
-async def submission_webhook(body: SubmissionResponse):
+async def submission_webhook(body: SubmissionAPI):
+    # Will add logic to add this in db tomorrow
     print("body from webhook", body)
     return "OK"

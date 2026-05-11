@@ -43,8 +43,10 @@ services:
     <<: *default-logging
     restart: always
   fastapi-starter:
-    image: divv919/fastapi-starter-dev:latest
-    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+
     volumes:
       - ../backend:/app:ro
     ports:
