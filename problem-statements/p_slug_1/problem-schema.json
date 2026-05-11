@@ -1,0 +1,15 @@
+
+{
+  "input_schema": {
+    "a": "int",
+    "b": "int"
+  },
+  "constraints": {
+    "a": [-1000000, 1000000],
+    "b": [-1000000, 1000000]
+  },
+  "result" : {
+    "function" : "summation",
+    "type" : "int"
+  }
+}
