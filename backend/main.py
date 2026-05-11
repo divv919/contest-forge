@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Body
+import os
+import httpx
 from enum import Enum
-from pydantic import BaseModel 
+from pydantic import BaseModel
+from typing import Annotated
 
 app = FastAPI()
 
@@ -37,6 +40,43 @@ class SubmissionResponse(BaseModel):
     status : SubmissionStatus
 
 
+class SolutionRequest(BaseModel):
+    source_code : str
+    problem_slug: str
+    language_id : int | None = 63
+
+@app.post("/submit")
+async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
+    problem_slug = solution.problem_slug
+    source_code = solution.source_code
+
+    input_dir = os.getcwd() + "/problem-statements/" + problem_slug + "/test.txt"
+    output_dir = os.getcwd() + "/problem-statements/"+ problem_slug + "/output.txt"
+    boilerplate_dir = os.getcwd() + "/problem-statements/"+ problem_slug + "/boilerplate/js/full-js-boilerplate.js"
+    with open(boilerplate_dir, "r", encoding="utf-8") as f:
+        full_source_code = f.read().replace("<USER_CODE>", source_code)
+    with open(input_dir, "r", encoding="utf-8") as f:
+        test_input_lines = f.read().splitlines()[1:]
+    with open(output_dir, "r", encoding="utf-8") as f:
+        output = f.read().splitlines()
+
+    test_cases = [test_input_lines[index:index + 2] for index in range(0, len(test_input_lines), 2)]
+
+    data_body = {
+        "submissions": [{
+            "source_code": full_source_code,
+            "language_id": 63,
+            "stdin": "\n".join(test_case),
+            "expected_output": expected_output,
+            "callback_url": "http://fastapi-start:80/submission_webhook"
+        } for test_case, expected_output in zip(test_cases, output)]
+
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await  client.post("http://server:2358/submissions/batch",json=data_body )
+    response = res.json()
+    return response
 
 @app.get("/health")
 async def health_check():
@@ -45,9 +85,5 @@ async def health_check():
 
 @app.put("/submission_webhook")
 async def submission_webhook(body: SubmissionResponse):
-    try:
-        print("body from webhook" ,body )
-
-    except Exception as e:
-        print("error during req", e)
+    print("body from webhook", body)
     return "OK"
