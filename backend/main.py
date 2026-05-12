@@ -4,7 +4,7 @@ import httpx
 from pydantic import BaseModel
 from typing import Annotated
 from db.schemas import *
-from db.schemas.submission import SubmissionAPI, SubmissionInDB, SubmissionStatusId
+from db.schemas.submission import SubmissionAPI,  SubmissionStatusId
 from sqlmodel import SQLModel , Session
 
 from db.engine import engine

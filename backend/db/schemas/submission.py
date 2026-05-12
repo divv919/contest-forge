@@ -1,6 +1,15 @@
 from enum import Enum
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
-from sqlmodel import SQLModel, Field, Column, Text
+from sqlmodel import SQLModel, Field, Column, Relationship, Text
+
+if TYPE_CHECKING:
+    from .contests import ContestSubmission
+    from .problem import Problem
+    from .contests import Contest
+    from .language import Language
+    from .user import User
 
 
 class SubmissionStatusId(int, Enum):
@@ -38,10 +47,11 @@ class SubmissionAPI(SubmissionBase):
 
 class TestCase(SubmissionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    submission_id : int = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission_id : str = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission: "Submission" = Relationship(back_populates="testcases")
 
 
-class SubmissionInDB(SubmissionBase, table=True):
+class Submission(SubmissionBase, table=True):
     id: str | None = Field(default=None, primary_key=True)
     source_code: str | None = Field(sa_column=Column(Text, nullable=False))
     problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
@@ -53,5 +63,12 @@ class SubmissionInDB(SubmissionBase, table=True):
     total_passed_cases : int = Field(default=0)
     max_memory: int | None = Field(default=None)
     total_time: int | None = Field(default=None)
+
+    problem: "Problem" = Relationship(back_populates="submissions")
+    active_contest: "Contest" = Relationship(back_populates="active_submissions")
+    language: "Language" = Relationship(back_populates="submissions")
+    user: "User" = Relationship(back_populates="submissions")
+    testcases: list["TestCase"] = Relationship(back_populates="submission")
+    contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="submission")
 
 
