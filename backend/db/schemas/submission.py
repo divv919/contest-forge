@@ -31,12 +31,27 @@ class SubmissionBase(SQLModel, table=False):
     stderr: str | None = None
     token: str
     compile_output: str | None = None
-    message : str | None  = None
     status : SubmissionStatusId
 
 class SubmissionAPI(SubmissionBase):
     status: SubmissionStatus
 
+class TestCase(SubmissionBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    submission_id : int = Field(foreign_key="submission.id", ondelete="CASCADE")
+
+
 class SubmissionInDB(SubmissionBase, table=True):
     id: str | None = Field(default=None, primary_key=True)
     source_code: str | None = Field(sa_column=Column(Text, nullable=False))
+    problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
+    active_contest_id: int | None = Field(foreign_key="contest.id", ondelete="CASCADE")
+    language_id: int = Field(foreign_key="language.id",ondelete="CASCADE")
+    user_id : int = Field(foreign_key="user.id", ondelete="CASCADE")
+    status: SubmissionStatusId
+    total_testcases: int = Field(default=0) 
+    total_passed_cases : int = Field(default=0)
+    max_memory: int | None = Field(default=None)
+    total_time: int | None = Field(default=None)
+
+

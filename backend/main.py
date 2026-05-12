@@ -3,14 +3,15 @@ import os
 import httpx
 from pydantic import BaseModel
 from typing import Annotated
+from db.schemas import *
 from db.schemas.submission import SubmissionAPI, SubmissionInDB, SubmissionStatusId
 from sqlmodel import SQLModel , Session
+
 from db.engine import engine
  
 app = FastAPI()
 
 SQLModel.metadata.create_all(engine)
-
 
 
 
@@ -39,7 +40,7 @@ async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
     data_body = {
         "submissions": [{
             "source_code": full_source_code,
-            "language_id": 63,
+            "language_id": 52,
             "stdin": "\n".join(test_case),
             "expected_output": expected_output,
             "callback_url": "http://backend-fastapi-starter-1/submission_webhook"
@@ -48,7 +49,7 @@ async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
     }
 
     async with httpx.AsyncClient() as client:
-        res = await  client.post("http://server:2358/submissions/batch",json=data_body )
+        res = await  client.post("http://server:2358/submissions/batch?base64_encoded=false",json=data_body )
     response = res.json()
     # response["status"] = SubmissionStatusId(response["status"]["id"])
     # submission = SubmissionInDB(**response,source_code=full_source_code)
