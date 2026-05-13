@@ -47,12 +47,12 @@ class SubmissionAPI(SubmissionBase):
 
 class TestCase(SubmissionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    submission_id : str = Field(foreign_key="submission.id", ondelete="CASCADE")
-    submission: "Submission" = Relationship(back_populates="testcases")
+    submission_id : int = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission: "Submission" = Relationship(back_populates="test_cases")
 
 
 class Submission(SubmissionBase, table=True):
-    id: str | None = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     source_code: str | None = Field(sa_column=Column(Text, nullable=False))
     problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
     active_contest_id: int | None = Field(foreign_key="contest.id", ondelete="CASCADE")
@@ -63,12 +63,11 @@ class Submission(SubmissionBase, table=True):
     total_passed_cases : int = Field(default=0)
     max_memory: int | None = Field(default=None)
     total_time: int | None = Field(default=None)
-
     problem: "Problem" = Relationship(back_populates="submissions")
-    active_contest: "Contest" = Relationship(back_populates="active_submissions")
+    active_contest: "Contest" = Relationship(back_populates="submissions")
     language: "Language" = Relationship(back_populates="submissions")
     user: "User" = Relationship(back_populates="submissions")
-    testcases: list["TestCase"] = Relationship(back_populates="submission")
+    test_cases: list["TestCase"] = Relationship(back_populates="submission")
     contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="submission")
 
 

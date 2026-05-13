@@ -21,7 +21,7 @@ class Contest(SQLModel, table=True):
     contest_points: list[ContestPoints] = Relationship(back_populates="contest")
     contests_problems_link: list[ContestProblems] = Relationship(back_populates="contest")
     contests_submissions_link: list[ContestSubmission] = Relationship(back_populates="contest")
-    active_submissions: list["Submission"] = Relationship(back_populates="active_contest")
+    submissions: list["Submission"] = Relationship(back_populates="active_contest")
 
     user: User = Relationship(back_populates="contests")
     
@@ -47,9 +47,10 @@ class ContestProblems(SQLModel, table=True):
     
 class ContestSubmission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    submission_id: str = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission_id: int = Field(foreign_key="submission.id", ondelete="CASCADE")
     contest_id : int = Field(foreign_key="contest.id", ondelete="CASCADE")
     problem_id : int = Field(foreign_key="problem.id", ondelete="CASCADE")
+    points : int = Field(default=0)
 
     problem: "Problem" = Relationship(back_populates="contests_submissions_link")
     contest: Contest = Relationship(back_populates="contests_submissions_link")

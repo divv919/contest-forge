@@ -6,13 +6,16 @@ from typing import Annotated
 from db.schemas import *
 from db.schemas.submission import SubmissionAPI,  SubmissionStatusId
 from sqlmodel import SQLModel , Session
+from contextlib import asynccontextmanager
 
 from db.engine import engine
- 
-app = FastAPI()
 
-SQLModel.metadata.create_all(engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    SQLModel.metadata.create_all(engine)
+    yield
 
+app = FastAPI(lifespan=lifespan)
 
 
 class SolutionRequest(BaseModel):
