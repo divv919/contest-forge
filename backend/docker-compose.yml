@@ -25,6 +25,12 @@ services:
     <<: *default-logging
     restart: always
 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
   db:
     image: postgres:16.2
     env_file: judge0.conf
