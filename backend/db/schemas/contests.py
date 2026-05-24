@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from datetime import datetime
 from typing import ClassVar, TYPE_CHECKING
@@ -23,7 +22,7 @@ class Contest(SQLModel, table=True):
     contests_submissions_link: list[ContestSubmission] = Relationship(back_populates="contest")
     submissions: list["Submission"] = Relationship(back_populates="active_contest")
 
-    user: User = Relationship(back_populates="contests")
+    user: "User" = Relationship(back_populates="contests")
     
 
 class ContestPoints(SQLModel, table=True):

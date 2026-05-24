@@ -3,12 +3,13 @@ import os
 import httpx
 from pydantic import BaseModel
 from typing import Annotated
-from db.schemas import *
-from db.schemas.submission import SubmissionAPI,  SubmissionStatusId
-from sqlmodel import SQLModel , Session
+from .db.schemas import *
+from .db.schemas.submission import SubmissionAPI
+from .api.auth import router as auth_router
+from sqlmodel import SQLModel 
 from contextlib import asynccontextmanager
 
-from db.engine import engine
+from .db.engine import engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(auth_router)
 
 
 class SolutionRequest(BaseModel):
