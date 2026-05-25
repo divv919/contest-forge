@@ -46,3 +46,5 @@ def problem_by_id(slug: str, session : SessionDep):
     
 
     
+# Todo
+# 1. Add logic to send if a problem is attempted or not for better UX

@@ -14,7 +14,7 @@ class Language(SQLModel, table=True):
     boilerplates: list["Boilerplate"] = Relationship(back_populates="language")
     submissions: list["Submission"] = Relationship(back_populates="language")
 
-class LanguageCodes(Enum, str):
+class LanguageCodes(str,Enum):
     cpp = "CPP"
     js = "JavaScript"
     py = "Python"
