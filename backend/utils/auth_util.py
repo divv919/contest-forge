@@ -8,7 +8,7 @@ from .exeptions import invalid_creds_exc
 SECRET_KEY = os.getenv("SECRET_KEY", "DEFAULT_SECRET_KEY") 
 ALGORITHM = os.getenv("ALGORITHM" ,"HS256")
 
-oauth2scheme = OAuth2PasswordBearer("/login")
+oauth2scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def create_access_token(data: dict):
@@ -20,8 +20,8 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 def decode_token(token : str) -> str:
-    payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
     try:
+        payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
         username = payload.get("sub")
         if username is None:
             raise invalid_creds_exc

@@ -6,10 +6,9 @@ from typing import Annotated
 from .db.schemas import *
 from .db.schemas.submission import SubmissionAPI
 from .api.auth import router as auth_router
-from sqlmodel import SQLModel 
+from .api.problem import router as problem_router
 from contextlib import asynccontextmanager
 
-from .db.engine import engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,6 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
+app.include_router(problem_router)
 
 
 class SolutionRequest(BaseModel):

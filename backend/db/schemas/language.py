@@ -1,5 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import TYPE_CHECKING
+from enum import Enum
+
 
 if TYPE_CHECKING:
     from .problem import Boilerplate
@@ -11,3 +13,8 @@ class Language(SQLModel, table=True):
     name: str
     boilerplates: list["Boilerplate"] = Relationship(back_populates="language")
     submissions: list["Submission"] = Relationship(back_populates="language")
+
+class LanguageCodes(Enum, str):
+    cpp = "CPP"
+    js = "JavaScript"
+    py = "Python"

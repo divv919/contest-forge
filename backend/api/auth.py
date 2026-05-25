@@ -3,15 +3,15 @@ from sqlmodel import  select
 from fastapi.security import   OAuth2PasswordRequestForm
 from typing import Annotated
 from pydantic import BaseModel
-from ..db.schemas.user import User
-from ..dependencies.auth_deps import SessionDep
+from ..db.schemas.user import User, UserBase
+from ..dependencies.auth_deps import SessionDep, UserDep
 from pwdlib import PasswordHash
 from ..utils.auth_util import create_access_token
 password_hash = PasswordHash.recommended()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-
+DUMMY_HASH = password_hash.hash("dummy_password")
 
 
 class LoginRequest(BaseModel):
@@ -32,7 +32,7 @@ async def login(credentials: Annotated[OAuth2PasswordRequestForm, Depends()], se
     existing_user_statement = select(User).where(User.username == credentials.username)
     existing_user = session.exec(existing_user_statement).first()
     if not existing_user:
-        password_hash.verify(credentials.password, "This string is to prevent time attacks")
+        password_hash.verify(credentials.password, DUMMY_HASH)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password", headers={"WWW-Authenticate" : "Bearer"})
     is_password_valid = password_hash.verify(credentials.password, existing_user.password)
 
@@ -58,9 +58,9 @@ async def register(user: Annotated[RegisterRequest, Body()], session : SessionDe
 
 
 
-@router.get("/me")
-async def get_current_user():
-    pass
+@router.get("/me", response_model=UserBase)
+async def read_current_user(current_user: UserDep) -> UserBase:
+    return current_user
 
 
 # TODOs
