@@ -4,7 +4,7 @@ from sqlmodel import select
 from ..dependencies.auth_deps import IsAuthenticatedDep
 from ..db.schemas.problem import Problem, ProblemBase, ProblemInfo
 from ..db.schemas.language import Language, LanguageCodes
-from ..utils.constants import ROOT
+from ..utils.constants import get_user_boilerplate_path, get_problem_dir
 router = APIRouter(tags=["problem"],  prefix="/problems", dependencies=[IsAuthenticatedDep])
 
 @router.get("/all", response_model=list[ProblemBase])
@@ -17,12 +17,7 @@ def problem_by_id(slug: str, session : SessionDep):
     problem = session.exec(select(Problem).where(Problem.slug == slug)).first()
     if problem is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem information not found")
-    base_problem_path = ROOT / "problem-statements" / slug
-    boilerplate_paths = {
-        "cpp": base_problem_path / "boilerplate/cpp/user-cpp-boilerplate.cpp",
-        "js": base_problem_path / "boilerplate/js/user-js-boilerplate.js",
-        "py": base_problem_path / "boilerplate/py/user-py-boilerplate.py",
-    }
+   
 
     boilerplate_codes: dict[int, str] = {}
     for language_code in LanguageCodes:
@@ -33,11 +28,11 @@ def problem_by_id(slug: str, session : SessionDep):
                 detail=f"Language not found for {language_code.value}",
             )
 
-        boilerplate_path = boilerplate_paths[language_code.name]
+        boilerplate_path = get_user_boilerplate_path(slug, language_code.name)
         with boilerplate_path.open("r", encoding="utf-8") as file_handle:
             boilerplate_codes[language.id] = file_handle.read()
 
-    metadata_path = base_problem_path / "metadata.md"
+    metadata_path = get_problem_dir(slug) / "metadata.md"
     with metadata_path.open("r", encoding="utf-8") as file_handle:
         metadata = file_handle.read()
 

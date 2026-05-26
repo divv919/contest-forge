@@ -4,7 +4,6 @@ import httpx
 from pydantic import BaseModel
 from typing import Annotated
 from .db.schemas import *
-from .db.schemas.submission import SubmissionAPI
 from .api.auth import router as auth_router
 from .api.problem import router as problem_router
 from .api.submission import router as submission_router
@@ -48,7 +47,7 @@ async def submit_solution(solution: Annotated[SolutionRequest, Body()]):
             "language_id": 52,
             "stdin": "\n".join(test_case),
             "expected_output": expected_output,
-            "callback_url": "http://backend-fastapi-starter-1/submission_webhook"
+            "callback_url": "http://fastapi-starter:80/submission/submission_webhook"
         } for test_case, expected_output in zip(test_cases, output)]
 
     }
@@ -71,8 +70,3 @@ async def health_check():
     print("ok health")
     return "OK 13"
 
-@app.put("/submission_webhook")
-async def submission_webhook(body: SubmissionAPI):
-    # Will add logic to add this in db tomorrow
-    print("body from webhook", body)
-    return "OK"

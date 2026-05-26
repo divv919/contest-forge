@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Column, Relationship, Text
@@ -49,7 +49,8 @@ class TestCase(SubmissionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     submission_id : int = Field(foreign_key="submission.id", ondelete="CASCADE")
     submission: "Submission" = Relationship(back_populates="test_cases")
-
+    stdin: str | None
+    expected_output: str | None
 
 
 class Submission(SQLModel, table=True):
@@ -63,7 +64,7 @@ class Submission(SQLModel, table=True):
     total_testcases: int = Field(default=0) 
     total_passed_cases : int = Field(default=0)
     max_memory: int | None = Field(default=None)
-    total_time: int | None = Field(default=None)
+    total_time: str | None = Field(default=None)
     problem: "Problem" = Relationship(back_populates="submissions")
     active_contest: "Contest" = Relationship(back_populates="submissions")
     language: "Language" = Relationship(back_populates="submissions")
@@ -76,10 +77,12 @@ class SubmissionRequest(BaseModel):
     problem_id: int
     source_code: str
     language_id: int
+    active_contest_id: int | None = None
 
 class SubmissionResponse(BaseModel):
     submission_id : int
     message: str
+    total_test_cases: int
 
 
 class Judge0RequestObject(BaseModel):
@@ -91,3 +94,31 @@ class Judge0RequestObject(BaseModel):
 
 class Judge0SubmitResponseObject(BaseModel):
     token: str
+
+
+class SubmissionStatusBase(BaseModel):
+    
+    total_testcases: int | None = None
+    total_passed_cases : int | None = None
+    max_memory: int | None = None
+    total_time: str | None = None
+    stdout : str | None = None
+    stderr: str | None = None
+    compile_output: str | None = None
+    status: SubmissionStatusId | None = None
+
+
+class SubmissionStatusResponse(SubmissionStatusBase):
+    state: Literal["PENDING", "FINISH"]
+
+
+
+class SubmissionsPaginatedRequest(BaseModel):
+    current_page: int
+    problem_id: int
+
+class SubmissionsPaginatedResponse(BaseModel):
+    status: SubmissionStatusId
+    language: str
+    max_memory: int | None = None
+    total_time: str | None = None
