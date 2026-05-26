@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import Depends
 from ..utils.auth_util import oauth2scheme, decode_token
-from ..utils.exeptions import invalid_creds_exc
+from ..utils.exceptions import invalid_creds_exc
 from sqlmodel import select
 from .db_deps import SessionDep
 from ..db.schemas.user import User

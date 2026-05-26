@@ -3,7 +3,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 import os
 from fastapi.security import OAuth2PasswordBearer
-from .exeptions import invalid_creds_exc
+from .exceptions import invalid_creds_exc
 
 SECRET_KEY = os.getenv("SECRET_KEY", "DEFAULT_SECRET_KEY") 
 ALGORITHM = os.getenv("ALGORITHM" ,"HS256")

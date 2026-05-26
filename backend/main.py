@@ -7,6 +7,7 @@ from .db.schemas import *
 from .db.schemas.submission import SubmissionAPI
 from .api.auth import router as auth_router
 from .api.problem import router as problem_router
+from .api.submission import router as submission_router
 from contextlib import asynccontextmanager
 
 
@@ -17,7 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(problem_router)
-
+app.include_router(submission_router)
 
 class SolutionRequest(BaseModel):
     source_code : str
