@@ -35,8 +35,8 @@ class SubmissionStatus(BaseModel):
 
 class SubmissionBase(SQLModel, table=False):
     stdout : str | None = None
-    time: str 
-    memory : int
+    time: str | None = None
+    memory : int | None = None
     stderr: str | None = None
     token: str
     compile_output: str | None = None
@@ -51,11 +51,12 @@ class TestCase(SubmissionBase, table=True):
     submission: "Submission" = Relationship(back_populates="test_cases")
 
 
-class Submission(SubmissionBase, table=True):
+
+class Submission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     source_code: str | None = Field(sa_column=Column(Text, nullable=False))
     problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
-    active_contest_id: int | None = Field(foreign_key="contest.id", ondelete="CASCADE")
+    active_contest_id: int | None = Field(default=None,foreign_key="contest.id", ondelete="CASCADE")
     language_id: int = Field(foreign_key="language.id",ondelete="CASCADE")
     user_id : int = Field(foreign_key="user.id", ondelete="CASCADE")
     status: SubmissionStatusId
@@ -71,3 +72,22 @@ class Submission(SubmissionBase, table=True):
     contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="submission")
 
 
+class SubmissionRequest(BaseModel):
+    problem_id: int
+    source_code: str
+    language_id: int
+
+class SubmissionResponse(BaseModel):
+    submission_id : int
+    message: str
+
+
+class Judge0RequestObject(BaseModel):
+    source_code: str
+    stdin: str
+    expected_output: str
+    language_id: int
+    callback_url: str
+
+class Judge0SubmitResponseObject(BaseModel):
+    token: str
