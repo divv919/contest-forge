@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Column, Relationship, Text
-
+from datetime import datetime, UTC
+from sqlalchemy import DateTime
 if TYPE_CHECKING:
     from .contests import ContestSubmission
     from .problem import Problem
@@ -71,7 +72,10 @@ class Submission(SQLModel, table=True):
     user: "User" = Relationship(back_populates="submissions")
     test_cases: list["TestCase"] = Relationship(back_populates="submission")
     contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="submission")
-
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
 
 class SubmissionRequest(BaseModel):
     problem_id: int

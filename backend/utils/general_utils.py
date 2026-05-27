@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Literal
+from ..db.schemas.problem import Difficulty
+from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -30,3 +31,25 @@ def get_full_boilerplate_path(slug: str, language_code : str):
     "py": base_problem_path / "boilerplate/py/full-py-boilerplate.py",
     }
     return boilerplate_paths[language_code]
+
+
+def get_points_from_submission_info(startTime : datetime, endTime: datetime, difficulty: Difficulty, solved_at: datetime | None = None) -> int:
+    if difficulty == Difficulty.EASE:
+        points = 1
+    elif difficulty == Difficulty.MEDIUM:
+        points = 2
+    else:
+        points = 3
+
+    solved_at = solved_at or datetime.now(timezone.utc)
+    contest_duration = (endTime - startTime).total_seconds()
+    if contest_duration <= 0:
+        return points
+
+    elapsed_time = (solved_at - startTime).total_seconds()
+    normalized_time = max(0.0, min(1.0, elapsed_time / contest_duration))
+
+    if normalized_time < 0.5:
+        points += 1
+
+    return points

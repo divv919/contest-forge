@@ -5,9 +5,10 @@ from ..dependencies.db_deps import SessionDep
 from ..db.schemas.submission import SubmissionRequest, SubmissionsPaginatedResponse, Judge0RequestObject, Judge0SubmitResponseObject, SubmissionStatusResponse, SubmissionStatusBase, Submission, SubmissionStatusId, TestCase, SubmissionResponse, SubmissionsPaginatedRequest
 from ..db.schemas.language import Language
 from ..db.schemas.problem import Problem
+from ..db.schemas.contests import ContestSubmission
 from ..db.schemas import Contest
 from sqlmodel import select
-from ..utils.constants import get_problem_dir ,get_full_boilerplate_path ,PAGE
+from ..utils.general_utils import get_problem_dir ,get_full_boilerplate_path ,PAGE, get_points_from_submission_info
 import httpx
 from ..utils.exceptions import invalid_creds_exc
 from ..db.schemas.submission import SubmissionAPI
@@ -98,7 +99,6 @@ def add_submission(user: UserDep, session: SessionDep, submission: SubmissionReq
 
 @router.put("/submission_webhook")
 def submission_webhook(body: SubmissionAPI, session: SessionDep):
-    # Add logic for contest submission
     testcase_to_change = session.exec(select(TestCase).where(TestCase.token == body.token)).first()
     if testcase_to_change is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -113,7 +113,7 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
     session.commit()
     yield "OK"
     submission = session.exec(select(Submission).where(Submission.id == testcase_to_change.submission_id)).first()
-    if submission is None:
+    if submission is None or submission.id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     if testcase_to_change.status == SubmissionStatusId.WA:
@@ -126,12 +126,18 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
         
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
+
     elif testcase_to_change.status == SubmissionStatusId.AC:
         submission.total_passed_cases += 1
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
         if submission.total_passed_cases == submission.total_testcases:
             submission.status = SubmissionStatusId.AC
+            if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
+                points_awarded = get_points_from_submission_info(submission.active_contest.startTime, submission.active_contest.endTime, submission.problem.difficulty,submission.created_at)
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=points_awarded)
+                session.add(contest_submission)
+                session.commit()
     else:
         if submission.status not in (SubmissionStatusId.WA, SubmissionStatusId.CE):
             submission.status = testcase_to_change.status

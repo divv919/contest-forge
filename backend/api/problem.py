@@ -4,7 +4,7 @@ from sqlmodel import select
 from ..dependencies.auth_deps import IsAuthenticatedDep
 from ..db.schemas.problem import Problem, ProblemBase, ProblemInfo
 from ..db.schemas.language import Language, LanguageCodes
-from ..utils.constants import get_user_boilerplate_path, get_problem_dir
+from ..utils.general_utils import get_user_boilerplate_path, get_problem_dir
 router = APIRouter(tags=["problem"],  prefix="/problems", dependencies=[IsAuthenticatedDep])
 
 @router.get("/all", response_model=list[ProblemBase])
