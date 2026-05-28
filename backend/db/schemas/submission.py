@@ -110,11 +110,12 @@ class SubmissionStatusBase(BaseModel):
     stderr: str | None = None
     compile_output: str | None = None
     status: SubmissionStatusId | None = None
+    message: str | None = None
+    is_truncated_for_contest: bool = False
 
 
 class SubmissionStatusResponse(SubmissionStatusBase):
     state: Literal["PENDING", "FINISH"]
-
 
 
 class SubmissionsPaginatedRequest(BaseModel):

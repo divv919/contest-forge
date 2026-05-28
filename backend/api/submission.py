@@ -3,7 +3,7 @@ from typing import Annotated
 from ..dependencies.auth_deps import IsAuthenticatedDep, UserDep
 from ..dependencies.db_deps import SessionDep
 from ..db.schemas.submission import SubmissionRequest, SubmissionsPaginatedResponse, Judge0RequestObject, Judge0SubmitResponseObject, SubmissionStatusResponse, SubmissionStatusBase, Submission, SubmissionStatusId, TestCase, SubmissionResponse, SubmissionsPaginatedRequest
-from ..db.schemas.language import Language
+from ..db.schemas.language import Language , LanguageCodes
 from ..db.schemas.problem import Problem
 from ..db.schemas.contests import ContestSubmission
 from ..db.schemas import Contest
@@ -55,8 +55,12 @@ def add_submission(user: UserDep, session: SessionDep, submission: SubmissionReq
     problem_path = get_problem_dir(problem.slug)
     output_path = problem_path / "output.txt"
     test_cases_path = problem_path / "test.txt"
-    boilerplate_path = get_full_boilerplate_path(problem.slug, language.name)
-
+    boilerplate_path = get_full_boilerplate_path(problem.slug,LanguageCodes(language.name).name)
+    if boilerplate_path is None:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Path not found for this submission problem",
+            )
     with boilerplate_path.open() as f:
         full_code =  f.read().replace("<USER_CODE>", submission.source_code)
 
@@ -93,7 +97,7 @@ def add_submission(user: UserDep, session: SessionDep, submission: SubmissionReq
 
     session.add_all(test_cases_add_in_db)
     session.commit()
-    return SubmissionResponse(message="Your code has been submitted successfully", submission_id=submission_add_in_db.id, total_test_cases=total_test_cases)
+    return SubmissionResponse(message="Your code has been submitted successfully", submission_id=submission_add_in_db.id, total_test_cases=total_test_cases if submission.active_contest_id is None else 0)
             
 
 
@@ -151,9 +155,10 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
 
 @router.post("/submission_status")
 def get_submission_status(user: UserDep, session: SessionDep, submission_id: Annotated[int, Body(embed=True)]):
-    # Add logic for contest submission
     submission_test_cases = session.exec(select(TestCase).where(TestCase.submission_id == submission_id)).all()
-    if submission_test_cases is None or len(submission_test_cases) <= 0:
+    submission = session.exec(select(Submission).where(Submission.id == submission_id).where(Submission.user_id == user.id)).first()
+
+    if submission_test_cases is None or len(submission_test_cases) <= 0 or submission is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The submission cannot be found")
     if any(
         test_case.status in (SubmissionStatusId.IN_QUEUE, SubmissionStatusId.PROCESSING)
@@ -183,14 +188,23 @@ def get_submission_status(user: UserDep, session: SessionDep, submission_id: Ann
             is_other_error = test_case
         
     if is_wa:
+        if submission.active_contest_id is not None:
+            return SubmissionStatusResponse(state="FINISH", status=SubmissionStatusId.WA, message="Only truncated info will be shown for active contest",is_truncated_for_contest=True)
         return SubmissionStatusResponse(state="FINISH",status=SubmissionStatusId.WA,max_memory=is_wa.memory, compile_output=is_wa.compile_output,total_time=str(float(is_wa.time or "0")) ,stderr=is_wa.stderr,stdout=is_wa.stdout,total_passed_cases=passed_count,total_testcases=len(submission_test_cases))
     if is_ce:
+        if submission.active_contest_id is not None:
+            return SubmissionStatusResponse(state="FINISH", status=SubmissionStatusId.CE, message="Only truncated info will be shown for active contest",is_truncated_for_contest=True)
         return SubmissionStatusResponse(state="FINISH",status=SubmissionStatusId.CE,compile_output=is_ce.compile_output, total_passed_cases=passed_count,total_testcases=len(submission_test_cases))
     if is_other_error:
+        if submission.active_contest_id is not None:
+            return SubmissionStatusResponse(state="FINISH", status=is_other_error.status, message="Only truncated info will be shown for active contest",is_truncated_for_contest=True)
         return SubmissionStatusResponse(state="FINISH",status=is_other_error.status,stderr=is_other_error.stderr,stdout=is_other_error.stdout, total_passed_cases=passed_count,total_testcases=len(submission_test_cases))
+    if submission.active_contest_id is not None:
+        return SubmissionStatusResponse(state="FINISH", status=SubmissionStatusId.AC, message="Only truncated info will be shown for active contest", is_truncated_for_contest=True)
+        
     return SubmissionStatusResponse(state="FINISH",status=SubmissionStatusId.AC,total_passed_cases=passed_count,total_testcases=len(submission_test_cases), max_memory=max_memory, total_time=str(total_time))
 
-@router.post("/problem_submissions", response_model=SubmissionsPaginatedResponse)
+@router.post("/problem_submissions", response_model=list[SubmissionsPaginatedResponse])
 def get_problem_submissions(session: SessionDep, user: UserDep, body: Annotated[SubmissionsPaginatedRequest,Body()]):
     submissions = session.exec(select(Submission).where(Submission.problem_id == body.problem_id).where(Submission.user_id == user.id).offset(PAGE["MEDIUM"] * (body.current_page -1))).all()
     if submissions is None:
@@ -204,6 +218,11 @@ def get_submission_info(user: UserDep, session : SessionDep, submission_id : Ann
     if submission is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No info found for submission")
 
+    if submission.active_contest_id is not None:
+        now = datetime.now(tz=timezone.utc)
+        if submission.active_contest.startTime < now < submission.active_contest.endTime:
+            return SubmissionStatusBase(status=submission.status, message="Only truncated info will be shown for active contest", is_truncated_for_contest=True) 
+         
     if submission.status == SubmissionStatusId.WA:
         test_case = session.exec(
             select(TestCase).where(TestCase.submission_id == submission_id).where(TestCase.status == SubmissionStatusId.WA)
@@ -282,7 +301,6 @@ def get_submission_info(user: UserDep, session : SessionDep, submission_id : Ann
 # Add a transaction in the API so that even if error occurs it is rolledback
 # Learn how u can make the webhook authenticable
 # Define max memory and time limit and only accept if they lie in the same bracket
-# add a header type auth for polling api to make sure user cant misuse
-# type conversion of total time taken in submission and test case
+# add a header type auth for polling api to make sure user cant misuse the status API
 # in case of retries of webhook the total count can give wrong value 
 # Use relationships to get data instead of quering using foreign key

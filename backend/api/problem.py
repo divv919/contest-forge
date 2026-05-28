@@ -29,6 +29,11 @@ def problem_by_id(slug: str, session : SessionDep):
             )
 
         boilerplate_path = get_user_boilerplate_path(slug, language_code.name)
+        if boilerplate_path is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Path not found for this problem",
+            )
         with boilerplate_path.open("r", encoding="utf-8") as file_handle:
             boilerplate_codes[language.id] = file_handle.read()
 

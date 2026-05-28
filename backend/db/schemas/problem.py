@@ -38,7 +38,6 @@ class ProblemInfo(BaseModel):
     boilerplate_codes: dict[int, str]
     problem_metadata: str
     description: str
-    solution: str
     test_cases_count: int = 0
 
 class Boilerplate(SQLModel, table=True):

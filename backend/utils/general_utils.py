@@ -1,6 +1,7 @@
 from pathlib import Path
 from ..db.schemas.problem import Difficulty
 from datetime import datetime, timezone
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -20,7 +21,8 @@ def get_user_boilerplate_path(slug: str, language_code : str):
     "js": base_problem_path / "boilerplate/js/user-js-boilerplate.js",
     "py": base_problem_path / "boilerplate/py/user-py-boilerplate.py",
     }
-    return boilerplate_paths[language_code]
+    path = boilerplate_paths.get(language_code)
+    return path
 
 
 def get_full_boilerplate_path(slug: str, language_code : str):
@@ -30,7 +32,8 @@ def get_full_boilerplate_path(slug: str, language_code : str):
     "js": base_problem_path / "boilerplate/js/full-js-boilerplate.js",
     "py": base_problem_path / "boilerplate/py/full-py-boilerplate.py",
     }
-    return boilerplate_paths[language_code]
+    path = boilerplate_paths.get(language_code)
+    return  path
 
 
 def get_points_from_submission_info(startTime : datetime, endTime: datetime, difficulty: Difficulty, solved_at: datetime | None = None) -> int:
