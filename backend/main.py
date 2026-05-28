@@ -7,6 +7,7 @@ from .db.schemas import *
 from .api.auth import router as auth_router
 from .api.problem import router as problem_router
 from .api.submission import router as submission_router
+from .api.contests import router as contests_router
 from contextlib import asynccontextmanager
 
 
@@ -18,6 +19,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(problem_router)
 app.include_router(submission_router)
+app.include_router(contests_router)
 
 class SolutionRequest(BaseModel):
     source_code : str

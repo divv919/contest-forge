@@ -206,10 +206,11 @@ def get_submission_status(user: UserDep, session: SessionDep, submission_id: Ann
 
 @router.post("/problem_submissions", response_model=list[SubmissionsPaginatedResponse])
 def get_problem_submissions(session: SessionDep, user: UserDep, body: Annotated[SubmissionsPaginatedRequest,Body()]):
-    submissions = session.exec(select(Submission).where(Submission.problem_id == body.problem_id).where(Submission.user_id == user.id).offset(PAGE["MEDIUM"] * (body.current_page -1))).all()
+    # Add logic to not show active contest submissions and past contest submissions with another flag
+    submissions = session.exec(select(Submission).where(Submission.problem_id == body.problem_id).where(Submission.user_id == user.id).offset(PAGE["MEDIUM"] * (body.current_page -1)).limit(PAGE["MEDIUM"])).all()
     if submissions is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No submission found for this problem")
-    return submissions
+    return [SubmissionsPaginatedResponse(**submission.model_dump(), language=submission.language.name) for submission in submissions]
 
 
 @router.post("/submission_info")

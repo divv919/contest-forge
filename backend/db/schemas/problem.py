@@ -38,7 +38,6 @@ class ProblemInfo(BaseModel):
     boilerplate_codes: dict[int, str]
     problem_metadata: str
     description: str
-    test_cases_count: int = 0
 
 class Boilerplate(SQLModel, table=True):
     problem_id : int = Field(foreign_key="problem.id", ondelete="CASCADE", primary_key=True)
@@ -47,3 +46,6 @@ class Boilerplate(SQLModel, table=True):
     problem: "Problem" = Relationship(back_populates="boilerplates")
     language: "Language" = Relationship(back_populates="boilerplates")
     
+
+class ContestInfoProblems(ProblemBase):
+    solve_count: int = 0

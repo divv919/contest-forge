@@ -3,18 +3,21 @@ from datetime import datetime
 from typing import ClassVar, TYPE_CHECKING
 from sqlalchemy import Column, DateTime
 from sqlmodel import SQLModel, Field, Relationship
-
+from pydantic import BaseModel
+from .problem import  ContestInfoProblems
 if TYPE_CHECKING:
     from .user import User
     from .submission import Submission
-    from .problem import Problem
-
+    from .problem import Problem, ContestInfoProblems
+    
 class Contest(SQLModel, table=True):
     id: int | None = Field(default=None , primary_key=True)
     name: str
+    slug: str
     startTime: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     endTime: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     created_by: int = Field(foreign_key="user.id", ondelete="CASCADE")
+    is_finalized: bool = Field(default=False)
 
     contest_points: list[ContestPoints] = Relationship(back_populates="contest")
     contests_problems_link: list[ContestProblems] = Relationship(back_populates="contest")
@@ -53,3 +56,20 @@ class ContestSubmission(SQLModel, table=True):
     problem: "Problem" = Relationship(back_populates="contests_submissions_link")
     contest: Contest = Relationship(back_populates="contests_submissions_link")
     submission: "Submission" = Relationship(back_populates="contests_submissions_link")
+
+
+class ContestCreateRequest(BaseModel):
+    name: str
+    endTime: datetime
+    startTime: datetime
+    problem_ids: list[int]
+
+
+
+class ContestInfoResponse(BaseModel):
+    name: str
+    slug: str
+    startTime: datetime 
+    endTime: datetime 
+    created_by: int    
+    problems: list["ContestInfoProblems"]

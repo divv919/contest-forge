@@ -14,7 +14,13 @@ class UserBase(SQLModel, table=False):
 
 class User(UserBase, table=True):
     id : int | None = Field(default=None, primary_key=True)
-  
+    password: str
+    contest_points: list["ContestPoints"] = Relationship(back_populates="user")
+    contests: list["Contest"] = Relationship(back_populates="user")
+    submissions: list["Submission"] = Relationship(back_populates="user")
+
+class UserWithId(UserBase, table=False):
+    id : int 
     password: str
     contest_points: list["ContestPoints"] = Relationship(back_populates="user")
     contests: list["Contest"] = Relationship(back_populates="user")
