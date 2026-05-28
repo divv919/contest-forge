@@ -124,12 +124,21 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
         submission.status = SubmissionStatusId.WA
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
+        if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                session.add(contest_submission)
+                session.commit()
+
     elif testcase_to_change.status == SubmissionStatusId.CE:
         if submission.status != SubmissionStatusId.WA:
             submission.status = SubmissionStatusId.CE
         
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
+        if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                session.add(contest_submission)
+                session.commit()
 
     elif testcase_to_change.status == SubmissionStatusId.AC:
         submission.total_passed_cases += 1
@@ -142,12 +151,17 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
                 contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=points_awarded)
                 session.add(contest_submission)
                 session.commit()
+
     else:
         if submission.status not in (SubmissionStatusId.WA, SubmissionStatusId.CE):
             submission.status = testcase_to_change.status
         
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
+        if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                session.add(contest_submission)
+                session.commit()
     session.add(submission)
     session.commit()
 
@@ -206,12 +220,10 @@ def get_submission_status(user: UserDep, session: SessionDep, submission_id: Ann
 
 @router.post("/problem_submissions", response_model=list[SubmissionsPaginatedResponse])
 def get_problem_submissions(session: SessionDep, user: UserDep, body: Annotated[SubmissionsPaginatedRequest,Body()]):
-    # Add logic to not show active contest submissions and past contest submissions with another flag
     submissions = session.exec(select(Submission).where(Submission.problem_id == body.problem_id).where(Submission.user_id == user.id).offset(PAGE["MEDIUM"] * (body.current_page -1)).limit(PAGE["MEDIUM"])).all()
     if submissions is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No submission found for this problem")
-    return [SubmissionsPaginatedResponse(**submission.model_dump(), language=submission.language.name) for submission in submissions]
-
+    return [SubmissionsPaginatedResponse(**submission.model_dump(), language=submission.language.name) for submission in submissions if submission.active_contest_id is None or submission.active_contest.endTime < datetime.now(tz=timezone.utc)]
 
 @router.post("/submission_info")
 def get_submission_info(user: UserDep, session : SessionDep, submission_id : Annotated[int, Body(embed=True)]):

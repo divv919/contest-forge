@@ -40,26 +40,30 @@ def get_full_boilerplate_path(slug: str, language_code : str):
 
 
 def get_points_from_submission_info(startTime : datetime, endTime: datetime, difficulty: Difficulty, solved_at: datetime | None = None) -> int:
-    # Fix the logic to get correct points
-    if difficulty == Difficulty.EASE:
-        points = 1
-    elif difficulty == Difficulty.MEDIUM:
-        points = 2
-    else:
-        points = 3
+    base_points = {
+        Difficulty.EASE: 100,
+        Difficulty.MEDIUM: 150,
+        Difficulty.HARD: 200,
+    }
 
+    points = base_points.get(difficulty, 100)
     solved_at = solved_at or datetime.now(timezone.utc)
-    contest_duration = (endTime - startTime).total_seconds()
-    if contest_duration <= 0:
+
+    contest_duration = max(0.0, (endTime - startTime).total_seconds())
+    if contest_duration == 0:
         return points
 
-    elapsed_time = (solved_at - startTime).total_seconds()
-    normalized_time = max(0.0, min(1.0, elapsed_time / contest_duration))
+    elapsed_time = max(0.0, (solved_at - startTime).total_seconds())
+    normalized_time = min(1.0, elapsed_time / contest_duration)
 
-    if normalized_time < 0.5:
-        points += 1
+    time_bonus_cap = max(1, round(points * 0.2))
+    step_seconds = contest_duration / time_bonus_cap
+    step_seconds = min(180.0, max(120.0, step_seconds))
 
-    return points
+    remaining_time = max(0.0, contest_duration * (1.0 - normalized_time))
+    time_bonus = min(time_bonus_cap, int(remaining_time // step_seconds))
+
+    return points + time_bonus
 
 
 def sluggify(to_slug_from : str):

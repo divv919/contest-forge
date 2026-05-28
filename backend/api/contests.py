@@ -77,21 +77,20 @@ def get_contest_info_by_id(session: SessionDep,  contest_slug : Annotated[str, B
 
 @router.post("/contest_submissions", response_model=list[ContestSubmissionsResponse])
 def get_contest_submissions(user: UserDep, slug: Annotated[str, Body(embed=True)], session: SessionDep):
-    # Do not use ContestSubmissions as a source of truth as it only contains values that are accepted
-    # Currently ongoing contest is showign all data , only show truncated data 
+
     contest = session.exec(select(Contest).where(Contest.slug == slug)).first()
     if contest is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No contest found for this slug")
     is_contest_ended = False
     if contest.endTime <= datetime.now(tz=timezone.utc):
         is_contest_ended = True
-    if is_contest_ended:
-        user_submissions = [submission for submission in contest.contests_submissions_link if submission.submission.user_id == user.id]
-        submissions_info = [ContestSubmissionsResponse(id=submission.submission.id, points=submission.points, status=submission.submission.status, created_at=submission.submission.created_at) for submission in user_submissions if submission is not None and submission.submission is not None and submission.submission.id is not None]
-        return submissions_info
-    else:
-        user_submissions = [submission for submission in contest.contests_submissions_link if submission.submission.user_id == user.id]
+    
+    user_submissions = [submission for submission in contest.contests_submissions_link if submission.submission.user_id == user.id]
 
+    if not is_contest_ended:
+        return [ContestSubmissionsResponse(id=submission.submission.id, points=submission.points, status=submission.submission.status, created_at=submission.submission.created_at, problem_id=submission.submission.problem_id, active_contest_id=submission.submission.active_contest_id, language_id=submission.submission.language_id) for submission in user_submissions if submission is not None and submission.submission.id is not None and submission.submission.active_contest_id is not None]
+        
+    else:
         return [ContestSubmissionsResponse(**submission.submission.model_dump(), points=submission.points) for submission in user_submissions if submission is not None and submission.submission is not None and submission.submission.id is not None] 
 
 
@@ -118,4 +117,4 @@ def get_contest_ranking(slug: str, session: SessionDep, page: int = 1):
 # Add a redis cache layer to store the contest rankings 
 # rate limit all the APIs especially ones that create something in db
 # Add a queue worker system to find the final contest ranking after it is ended for now it is being handled by scheduling
-# Add active contest slug during submission
+# Only allow fixed contest durations of start and end time

@@ -123,6 +123,7 @@ class SubmissionsPaginatedRequest(BaseModel):
     problem_id: int
 
 class SubmissionsPaginatedResponse(BaseModel):
+    id: int | None = None
     status: SubmissionStatusId
     language: str
     max_memory: int | None = None
@@ -131,9 +132,9 @@ class SubmissionsPaginatedResponse(BaseModel):
 
 class ContestSubmissionsResponse(BaseModel):
     id: int 
-    problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
-    active_contest_id: int | None = Field(default=None,foreign_key="contest.id", ondelete="CASCADE")
-    language_id: int = Field(foreign_key="language.id",ondelete="CASCADE")
+    problem_id: int
+    active_contest_id: int 
+    language_id: int 
     status: SubmissionStatusId
     total_testcases: int | None= None  
     total_passed_cases : int | None = None
