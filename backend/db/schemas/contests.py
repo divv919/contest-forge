@@ -26,6 +26,14 @@ class Contest(SQLModel, table=True):
 
     user: "User" = Relationship(back_populates="contests")
     
+class AllContestsResponse(BaseModel):
+    id: int | None = None
+    name: str
+    slug: str
+    startTime: datetime
+    endTime: datetime
+    created_by: str | None = None
+
 
 class ContestPoints(SQLModel, table=True):
     __tablename__: ClassVar[str] = "contest_points"
@@ -51,8 +59,10 @@ class ContestSubmission(SQLModel, table=True):
     submission_id: int = Field(foreign_key="submission.id", ondelete="CASCADE")
     contest_id : int = Field(foreign_key="contest.id", ondelete="CASCADE")
     problem_id : int = Field(foreign_key="problem.id", ondelete="CASCADE")
+    user_id : int = Field(foreign_key="user.id", ondelete="CASCADE")
     points : int = Field(default=0)
 
+    user: "User" = Relationship(back_populates="contests_submissions_link")
     problem: "Problem" = Relationship(back_populates="contests_submissions_link")
     contest: Contest = Relationship(back_populates="contests_submissions_link")
     submission: "Submission" = Relationship(back_populates="contests_submissions_link")

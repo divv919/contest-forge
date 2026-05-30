@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .contests import ContestPoints, Contest
     from .submission import Submission
-
+    from .contests import ContestSubmission
 
 class UserBase(SQLModel, table=False):
     id : int
@@ -18,6 +18,7 @@ class User(UserBase, table=True):
     contest_points: list["ContestPoints"] = Relationship(back_populates="user")
     contests: list["Contest"] = Relationship(back_populates="user")
     submissions: list["Submission"] = Relationship(back_populates="user")
+    contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="user")
 
 class UserWithId(UserBase, table=False):
     id : int 
@@ -25,3 +26,4 @@ class UserWithId(UserBase, table=False):
     contest_points: list["ContestPoints"] = Relationship(back_populates="user")
     contests: list["Contest"] = Relationship(back_populates="user")
     submissions: list["Submission"] = Relationship(back_populates="user")
+    contests_submissions_link: list["ContestSubmission"] = Relationship(back_populates="user")

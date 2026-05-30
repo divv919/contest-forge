@@ -49,3 +49,5 @@ class Boilerplate(SQLModel, table=True):
 
 class ContestInfoProblems(ProblemBase):
     solve_count: int = 0
+    attempted: str | None = None
+    

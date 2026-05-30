@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Body, HTTPException, status
 from ..dependencies.db_deps import SessionDep
 from ..dependencies.auth_deps import UserDep ,IsAuthenticatedDep
-from ..db.schemas.contests import ContestCreateRequest, Contest, ContestProblems, ContestInfoResponse, ContestPoints
-from ..db.schemas.submission import ContestSubmissionsResponse
+from ..db.schemas.contests import ContestCreateRequest, Contest, ContestProblems, ContestInfoResponse, ContestPoints, AllContestsResponse, ContestSubmission
+from ..db.schemas.submission import ContestSubmissionsResponse, SubmissionStatusId
 from ..db.schemas.problem import Problem, ContestInfoProblems
+from ..db.schemas.user import User
 from ..utils.general_utils import sluggify, PAGE
 from typing import Annotated
 from datetime import datetime, timezone , timedelta
@@ -11,6 +12,11 @@ from sqlmodel import select, col, and_
 
 
 router = APIRouter(prefix="/contests", tags=["contests"])
+
+def get_users_map(session: SessionDep, user_ids: set[int]) -> dict[int, str]:
+    users = session.exec(select(User).where(col(User.id).in_(user_ids))).all()
+    users_map = {user.id: user.username for user in users if user.id is not None}
+    return users_map
 
 
 @router.post("/create")
@@ -49,30 +55,60 @@ def create_contest(body: Annotated[ContestCreateRequest, Body()], session: Sessi
     
     return {"message" : f"Contest created successfully with name {contest_to_create.name}"}
 
-@router.get("/all_upcoming_contests", dependencies=[IsAuthenticatedDep], response_model=list[Contest])
+@router.get("/all_upcoming_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
 def get_all_upcoming_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(Contest.startTime >= datetime.now())).all()
-    return contests
+    contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)
+    users_map = get_users_map(session, contest_created_by_ids)
+    return [AllContestsResponse(**{
+            **contest.model_dump(),
+            "created_by": users_map.get(contest.created_by)
+        }) for contest in contests]
 
-@router.get("/ongoing_contests", dependencies=[IsAuthenticatedDep], response_model=list[Contest])
+
+
+
+@router.get("/ongoing_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
 def  get_ongoing_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(and_(Contest.endTime >= datetime.now(), Contest.startTime <= datetime.now()))).all()
-    return contests
+    contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)
+    users_map = get_users_map(session, contest_created_by_ids)
+    return [AllContestsResponse(**{
+            **contest.model_dump(),
+            "created_by": users_map.get(contest.created_by)
+        }) for contest in contests]
 
-@router.get("/past_contests", dependencies=[IsAuthenticatedDep], response_model=list[Contest])
+
+@router.get("/past_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
 def get_past_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(Contest.endTime < datetime.now())).all()
-    return contests
+    contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)
+    users_map = get_users_map(session, contest_created_by_ids)
+    return [AllContestsResponse(**{
+        **contest.model_dump(),
+        "created_by": users_map.get(contest.created_by)
+    }) for contest in contests]
 
-@router.post("/contest_info", dependencies=[IsAuthenticatedDep], response_model=ContestInfoResponse)
-def get_contest_info_by_id(session: SessionDep,  contest_slug : Annotated[str, Body(embed=True)]):
+@router.post("/contest_info", response_model=ContestInfoResponse)
+def get_contest_info_by_id(user: UserDep, session: SessionDep,  contest_slug : Annotated[str, Body(embed=True)]):
     contest = session.exec(select(Contest).where(Contest.slug == contest_slug)).first()
     if contest is None or contest.id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No contest found for this id")
     contest_problems = session.exec(select(ContestProblems).where(ContestProblems.contest_id == contest.id)).all()
     if len(contest_problems) <= 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No problems found for this contest")
-    return ContestInfoResponse(**contest.model_dump(),problems=[ContestInfoProblems(**contest_problem.model_dump(), **contest_problem.problem.model_dump()) for contest_problem in contest_problems ])
+    problem_to_status_map = {}
+    for contest_problem in contest_problems:
+        user_submissions = [submission for submission in contest_problem.problem.submissions if submission.user_id == user.id and submission.active_contest_id == contest.id]
+        if len(user_submissions) <= 0:
+            problem_to_status_map[contest_problem.problem.id] = "NOT_ATTEMPTED"
+        elif any(submission.status == SubmissionStatusId.AC for submission in user_submissions):
+            problem_to_status_map[contest_problem.problem.id] = "ACCEPTED"
+        else:
+            problem_to_status_map[contest_problem.problem.id] = "REJECTED"
+
+
+    return ContestInfoResponse(**contest.model_dump(),problems=[ContestInfoProblems(**contest_problem.model_dump(), **contest_problem.problem.model_dump(), attempted=problem_to_status_map.get(contest_problem.problem.id, "NOT_ATTEMPTED")) for contest_problem in contest_problems ])
         
 
 @router.post("/contest_submissions", response_model=list[ContestSubmissionsResponse])
@@ -118,3 +154,5 @@ def get_contest_ranking(slug: str, session: SessionDep, page: int = 1):
 # rate limit all the APIs especially ones that create something in db
 # Add a queue worker system to find the final contest ranking after it is ended for now it is being handled by scheduling
 # Only allow fixed contest durations of start and end time
+# Add max and min problem number for a contest
+# Make sure the get user map can be handled by a redis cache layer or some other in memory so that we dont have to touch db everytime we need users

@@ -19,7 +19,6 @@ router = APIRouter(prefix="/submission", tags=["submissions"])
 
 @router.post("/submit", response_model=SubmissionResponse, dependencies=[IsAuthenticatedDep])
 def add_submission(user: UserDep, session: SessionDep, submission: SubmissionRequest):
-    
     user_id = user.id
     if user_id is None:
         raise invalid_creds_exc
@@ -119,13 +118,16 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
     submission = session.exec(select(Submission).where(Submission.id == testcase_to_change.submission_id)).first()
     if submission is None or submission.id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    error_free_statuses = [SubmissionStatusId.AC, SubmissionStatusId.IN_QUEUE, SubmissionStatusId.PROCESSING] 
+    if submission.status not in error_free_statuses:
+        return
     
     if testcase_to_change.status == SubmissionStatusId.WA:
         submission.status = SubmissionStatusId.WA
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
         if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
-                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0,  user_id=submission.user_id)
                 session.add(contest_submission)
                 session.commit()
 
@@ -136,7 +138,7 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
         if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
-                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0,  user_id=submission.user_id)
                 session.add(contest_submission)
                 session.commit()
 
@@ -148,7 +150,7 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
             submission.status = SubmissionStatusId.AC
             if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
                 points_awarded = get_points_from_submission_info(submission.active_contest.startTime, submission.active_contest.endTime, submission.problem.difficulty,submission.created_at)
-                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=points_awarded)
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=points_awarded, user_id=submission.user_id)
                 session.add(contest_submission)
                 session.commit()
 
@@ -159,7 +161,7 @@ def submission_webhook(body: SubmissionAPI, session: SessionDep):
         submission.total_time = str(float(submission.total_time or 0) + float(body.time or "0"))
         submission.max_memory = max(submission.max_memory or 0, body.memory or 0)
         if submission.active_contest_id is not None and submission.contests_submissions_link is not None:
-                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0)
+                contest_submission = ContestSubmission(submission_id=submission.id,contest_id=submission.active_contest_id,problem_id=submission.problem_id, points=0, user_id=submission.user_id)
                 session.add(contest_submission)
                 session.commit()
     session.add(submission)
@@ -317,3 +319,4 @@ def get_submission_info(user: UserDep, session : SessionDep, submission_id : Ann
 # add a header type auth for polling api to make sure user cant misuse the status API
 # in case of retries of webhook the total count can give wrong value 
 # Use relationships to get data instead of quering using foreign key
+# Add lock on submission webhook so that every test case for a submission is processed one at a time
