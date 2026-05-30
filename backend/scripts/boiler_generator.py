@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 PROBLEM_STATEMENTS_DIR = ROOT / "problem-statements"
 ENV_KEYS = ("PROBLEM_SLUG", "problem_slug", "PROBLEM_ID", "problem_id", "SLUG", "slug")
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Body
+import asyncio
 import os
 import httpx
 from pydantic import BaseModel
@@ -8,12 +9,17 @@ from .api.auth import router as auth_router
 from .api.problem import router as problem_router
 from .api.submission import router as submission_router
 from .api.contests import router as contests_router
+from .services.contest_finalizer import contest_finalizer_loop
 from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    stop_event = asyncio.Event()
+    scheduler_task = asyncio.create_task(contest_finalizer_loop(stop_event))
     yield
+    stop_event.set()
+    await scheduler_task
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)

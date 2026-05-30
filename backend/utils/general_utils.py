@@ -12,6 +12,45 @@ PAGE = {
     "MEDIUM" : 20
 }
 
+FINALIZE_AND_INSERTION_QUERY = """
+INSERT INTO contest_points (
+    user_id,
+    contest_id,
+    total_points,
+    rank
+)
+WITH best_submissions AS (
+    SELECT *
+    FROM (
+        SELECT
+            cs.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY cs.user_id, cs.problem_id, cs.contest_id
+                ORDER BY cs.points DESC
+            ) AS rn
+        FROM contestsubmission cs
+        WHERE cs.contest_id = :contest_id
+    ) cs
+    WHERE rn = 1
+)
+SELECT
+    t.user_id,
+    t.contest_id,
+    t.total_points,
+    RANK() OVER (
+        ORDER BY t.total_points DESC
+    ) AS rank
+FROM (
+    SELECT
+        user_id,
+        contest_id,
+        SUM(points) AS total_points
+    FROM best_submissions
+    GROUP BY user_id, contest_id
+) t;
+
+"""
+
 
 def get_problem_dir(slug: str):
     return ROOT / "problem-statements" / slug
