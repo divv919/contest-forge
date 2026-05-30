@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select, text
@@ -9,7 +8,6 @@ from ..utils.general_utils import FINALIZE_AND_INSERTION_QUERY
 from ..db.engine import engine
 from ..db.schemas.contests import Contest
 
-logger = logging.getLogger(__name__)
 
 FINALIZER_INTERVAL_SECONDS = 86400
 
@@ -23,7 +21,6 @@ def finalize_contest_results(session: Session, contest: Contest) -> None:
 
 def finalize_due_contests_once() -> None:
     now = datetime.now(timezone.utc)
-    logger.info("Checking for contests to finalize at %s", now.isoformat())
     with Session(engine) as session:
         contests = session.exec(
             select(Contest).where(
@@ -39,7 +36,7 @@ def finalize_due_contests_once() -> None:
                 
                 finalize_contest_results(session, contest)
             except Exception:
-                logger.exception(
+                print(
                     "Failed to finalize contest %s",
                     contest.id or contest.name,
                 )
@@ -48,8 +45,6 @@ def finalize_due_contests_once() -> None:
 async def contest_finalizer_loop(stop_event: asyncio.Event) -> None:
     while not stop_event.is_set():
 
-        logger.info("Starting contest finalization loop iteration")
-        print("Starting contest finalization loop iteration")
         await asyncio.to_thread(finalize_due_contests_once)
 
         try:
