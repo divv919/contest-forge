@@ -4,11 +4,11 @@ from typing import ClassVar, TYPE_CHECKING
 from sqlalchemy import Column, DateTime
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
-from .problem import  ContestInfoProblems
 if TYPE_CHECKING:
     from .user import User
     from .submission import Submission
-    from .problem import Problem, ContestInfoProblems
+    from .problem import Problem
+    from .problem import ContestInfoProblems
     
 class Contest(SQLModel, table=True):
     id: int | None = Field(default=None , primary_key=True)
@@ -73,6 +73,13 @@ class ContestCreateRequest(BaseModel):
     endTime: datetime
     startTime: datetime
     problem_ids: list[int]
+
+
+class ContestCreateResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+    message: str
 
 
 

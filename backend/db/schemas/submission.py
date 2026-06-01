@@ -122,12 +122,19 @@ class SubmissionsPaginatedRequest(BaseModel):
     current_page: int
     problem_id: int
 
+class UserSubmissionsRequest(BaseModel):
+    current_page: int
+
+
 class SubmissionsPaginatedResponse(BaseModel):
     id: int | None = None
+    problem_id: int | None = None
+    active_contest_id: int | None = None
     status: SubmissionStatusId
     language: str
     max_memory: int | None = None
     total_time: str | None = None
+    created_at: datetime | None = None
 
 
 class ContestSubmissionsResponse(BaseModel):

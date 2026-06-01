@@ -1,7 +1,15 @@
 from fastapi import APIRouter, Body, HTTPException, status
 from ..dependencies.db_deps import SessionDep
 from ..dependencies.auth_deps import UserDep ,IsAuthenticatedDep
-from ..db.schemas.contests import ContestCreateRequest, Contest, ContestProblems, ContestInfoResponse, ContestPoints, AllContestsResponse, ContestSubmission
+from ..db.schemas.contests import (
+    AllContestsResponse,
+    Contest,
+    ContestCreateRequest,
+    ContestCreateResponse,
+    ContestInfoResponse,
+    ContestPoints,
+    ContestProblems,
+)
 from ..db.schemas.submission import ContestSubmissionsResponse, SubmissionStatusId
 from ..db.schemas.problem import Problem, ContestInfoProblems
 from ..db.schemas.user import User
@@ -19,7 +27,7 @@ def get_users_map(session: SessionDep, user_ids: set[int]) -> dict[int, str]:
     return users_map
 
 
-@router.post("/create")
+@router.post("/create", response_model=ContestCreateResponse)
 def create_contest(body: Annotated[ContestCreateRequest, Body()], session: SessionDep, user: UserDep):
     if body.problem_ids is None or len(body.problem_ids) <=0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Problem ids array cannot be empty")
@@ -53,9 +61,14 @@ def create_contest(body: Annotated[ContestCreateRequest, Body()], session: Sessi
     session.add_all(contest_problems_add)
     session.commit()
     
-    return {"message" : f"Contest created successfully with name {contest_to_create.name}"}
+    return ContestCreateResponse(
+        id=contest_to_create.id,
+        name=contest_to_create.name,
+        slug=contest_to_create.slug,
+        message=f"Contest created successfully with name {contest_to_create.name}",
+    )
 
-@router.get("/all_upcoming_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
+@router.get("/all_upcoming_contests", response_model=list[AllContestsResponse])
 def get_all_upcoming_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(Contest.startTime >= datetime.now())).all()
     contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)
@@ -68,7 +81,7 @@ def get_all_upcoming_contests(session: SessionDep):
 
 
 
-@router.get("/ongoing_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
+@router.get("/ongoing_contests", response_model=list[AllContestsResponse])
 def  get_ongoing_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(and_(Contest.endTime >= datetime.now(), Contest.startTime <= datetime.now()))).all()
     contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)
@@ -79,7 +92,7 @@ def  get_ongoing_contests(session: SessionDep):
         }) for contest in contests]
 
 
-@router.get("/past_contests", dependencies=[IsAuthenticatedDep], response_model=list[AllContestsResponse])
+@router.get("/past_contests", response_model=list[AllContestsResponse])
 def get_past_contests(session: SessionDep):
     contests = session.exec(select(Contest).where(Contest.endTime < datetime.now())).all()
     contest_created_by_ids = set(contest.created_by for contest in contests if contest.created_by is not None)

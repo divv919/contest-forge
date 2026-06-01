@@ -3,6 +3,7 @@ from typing import Annotated
 from ..dependencies.auth_deps import IsAuthenticatedDep, UserDep
 from ..dependencies.db_deps import SessionDep
 from ..db.schemas.submission import SubmissionRequest, SubmissionsPaginatedResponse, Judge0RequestObject, Judge0SubmitResponseObject, SubmissionStatusResponse, SubmissionStatusBase, Submission, SubmissionStatusId, TestCase, SubmissionResponse, SubmissionsPaginatedRequest
+from ..db.schemas.submission import UserSubmissionsRequest
 from ..db.schemas.language import Language , LanguageCodes
 from ..db.schemas.problem import Problem
 from ..db.schemas.contests import ContestSubmission
@@ -226,6 +227,23 @@ def get_problem_submissions(session: SessionDep, user: UserDep, body: Annotated[
     if submissions is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No submission found for this problem")
     return [SubmissionsPaginatedResponse(**submission.model_dump(), language=submission.language.name) for submission in submissions if submission.active_contest_id is None or submission.active_contest.endTime < datetime.now(tz=timezone.utc)]
+
+
+@router.post("/my_submissions", response_model=list[SubmissionsPaginatedResponse])
+def get_user_submissions(user: UserDep, session: SessionDep, body: Annotated[UserSubmissionsRequest, Body()]):
+    submissions = session.exec(select(Submission).where(Submission.user_id == user.id).order_by(Submission.created_at.desc()).offset(PAGE["MEDIUM"] * (body.current_page - 1)).limit(PAGE["MEDIUM"])).all()
+    if submissions is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No submissions found for user")
+
+    return [
+        SubmissionsPaginatedResponse(
+            **submission.model_dump(),
+            language=submission.language.name,
+            created_at=submission.created_at,
+        )
+        for submission in submissions
+        if submission.active_contest_id is None or submission.active_contest.endTime < datetime.now(tz=timezone.utc)
+    ]
 
 @router.post("/submission_info")
 def get_submission_info(user: UserDep, session : SessionDep, submission_id : Annotated[int, Body(embed=True)]):
