@@ -9,6 +9,7 @@ from ..db.schemas.contests import (
     ContestInfoResponse,
     ContestPoints,
     ContestProblems,
+    ContestRankingsResponse
 )
 from ..db.schemas.submission import ContestSubmissionsResponse, SubmissionStatusId
 from ..db.schemas.problem import Problem, ContestInfoProblems
@@ -143,7 +144,7 @@ def get_contest_submissions(user: UserDep, slug: Annotated[str, Body(embed=True)
         return [ContestSubmissionsResponse(**submission.submission.model_dump(), points=submission.points) for submission in user_submissions if submission is not None and submission.submission is not None and submission.submission.id is not None] 
 
 
-@router.get("/contest_ranking/{slug}", response_model=list[ContestPoints])
+@router.get("/contest_ranking/{slug}", response_model=list[ContestRankingsResponse])
 def get_contest_ranking(slug: str, session: SessionDep, page: int = 1):
     contest = session.exec(select(Contest).where(Contest.slug == slug)).first()
     if contest is None:
@@ -156,7 +157,13 @@ def get_contest_ranking(slug: str, session: SessionDep, page: int = 1):
     ranking = session.exec(select(ContestPoints).where(ContestPoints.contest_id == contest.id).order_by(col(ContestPoints.rank)).offset((page - 1) * PAGE["MEDIUM"]).limit(PAGE["MEDIUM"])).all()
     if ranking is None or len(ranking) <= 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ranking information found for this contest")
-    return ranking
+    return [ContestRankingsResponse(
+        user_id=rank.user_id,
+        username=rank.user.username,
+        total_points=rank.total_points,
+        rank=rank.rank,
+        contest_id=rank.contest_id
+    ) for rank in ranking]
 
 
 

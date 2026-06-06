@@ -1,8 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function Loading() {
+export  function Loading() {
   return <Skeleton className="h-[60vh] w-full rounded-3xl" />
-}import Loading from "@/components/shared/Loading"
+}
 
 export default function AppLoading() {
   return <Loading />

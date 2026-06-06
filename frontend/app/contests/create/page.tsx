@@ -25,9 +25,9 @@ type FormState = {
 }
 
 type SuccessState = {
-  id: number
-  name: string
-  slug: string
+  id?: number
+  name?: string
+  slug?: string
   message: string
 }
 
@@ -445,7 +445,7 @@ function CreateContestContent() {
           </CardContent>
         </Card>
 
-        {success ? (
+        {success && !!success.id && !!success.slug ? (
           <Card>
             <CardHeader>
               <CardTitle>Contest created</CardTitle>

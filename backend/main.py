@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Body
+from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import os
 import httpx
@@ -22,7 +23,19 @@ async def lifespan(app: FastAPI):
     stop_event.set()
     await scheduler_task
 
+origins = [
+    "http://localhost:3000",
+    "http://frontend:3000",
+]
+
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router)
 app.include_router(problem_router)
 app.include_router(submission_router)

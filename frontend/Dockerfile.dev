@@ -1,11 +1,9 @@
-FROM node:22-alpine
-
+FROM node:24
 WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json yarn.lock .pnp.cjs .pnp.loader.mjs ./
-COPY .yarn ./.yarn
+COPY package.json yarn.lock .yarnrc.yml next.config.ts ./
 
 RUN yarn install --immutable
 

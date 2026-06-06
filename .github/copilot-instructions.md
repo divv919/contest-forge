@@ -1,9 +1,0 @@
-- Backend uses FastAPI.
-- Use SQLModel instead of SQLAlchemy ORM directly.
-- All the backend apis are in /api, all dependencies are in /dependencies, all database or relevant pydantic models are in /db/schema , the additional utils are in /utils.
-- Follow repository pattern.
-- Use type hints everywhere.
-- Use async endpoints only when necessary.
-- Frontend uses nextjs 
-- Use tailwindcss for styling, and follow the existing style.
-- Follow the most standard method and up to date (latest) practices for nextjs and tailwindcss

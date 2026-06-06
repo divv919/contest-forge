@@ -4,11 +4,11 @@ from typing import ClassVar, TYPE_CHECKING
 from sqlalchemy import Column, DateTime
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel
+from .problem import ContestInfoProblems
 if TYPE_CHECKING:
     from .user import User
     from .submission import Submission
     from .problem import Problem
-    from .problem import ContestInfoProblems
     
 class Contest(SQLModel, table=True):
     id: int | None = Field(default=None , primary_key=True)
@@ -44,6 +44,12 @@ class ContestPoints(SQLModel, table=True):
     contest: Contest = Relationship(back_populates="contest_points")
     user: "User" = Relationship(back_populates="contest_points")
 
+class ContestRankingsResponse(BaseModel):
+    user_id: int
+    username: str
+    total_points: int
+    rank: int
+    contest_id: int
 
 class ContestProblems(SQLModel, table=True):
     solve_count: int = Field(default=0)
@@ -89,4 +95,4 @@ class ContestInfoResponse(BaseModel):
     startTime: datetime 
     endTime: datetime 
     created_by: int    
-    problems: list["ContestInfoProblems"]
+    problems: list[ContestInfoProblems]
