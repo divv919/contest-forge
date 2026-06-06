@@ -25,9 +25,9 @@ type FormState = {
 }
 
 type SuccessState = {
-  id?: number
-  name?: string
-  slug?: string
+  id: number
+  name: string
+  slug: string
   message: string
 }
 
@@ -240,7 +240,7 @@ function CreateContestContent() {
       setSuccess(response)
       setForm((current) => ({ ...current, name: "" }))
       setSelectedProblemIds([])
-    } catch (createError: unknown) {
+    } catch (createError:  unknown) {
       setError(getErrorMessage(createError, "Contest creation failed"))
     } finally {
       setSubmitting(false)
@@ -445,7 +445,7 @@ function CreateContestContent() {
           </CardContent>
         </Card>
 
-        {success && !!success.id && !!success.slug ? (
+        {success ? (
           <Card>
             <CardHeader>
               <CardTitle>Contest created</CardTitle>
