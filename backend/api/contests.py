@@ -1,3 +1,6 @@
+from typing import Annotated
+from datetime import datetime, timezone , timedelta
+from sqlmodel import select, col, and_
 from fastapi import APIRouter, Body, HTTPException, status
 from ..dependencies.db_deps import SessionDep
 from ..dependencies.auth_deps import UserDep ,IsAuthenticatedDep
@@ -15,9 +18,6 @@ from ..db.schemas.submission import ContestSubmissionsResponse, SubmissionStatus
 from ..db.schemas.problem import Problem, ContestInfoProblems
 from ..db.schemas.user import User
 from ..utils.general_utils import sluggify, PAGE
-from typing import Annotated
-from datetime import datetime, timezone , timedelta
-from sqlmodel import select, col, and_
 
 
 router = APIRouter(prefix="/contests", tags=["contests"])

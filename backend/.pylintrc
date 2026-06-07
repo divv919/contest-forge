@@ -1,0 +1,6 @@
+{
+    "disable": [
+        "missing-docstring",
+        "missing-function-docstring",
+    ]
+}
