@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from ..dependencies.db_deps import SessionDep
 from sqlmodel import select
+
 from ..db.schemas.language import Language
+from ..dependencies.db_deps import SessionDep
 
 router = APIRouter(prefix="/languages", tags=["languages"])
 

@@ -1,15 +1,15 @@
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
-from sqlmodel import SQLModel, Field, Column, Relationship, Text
-from datetime import datetime, UTC
 from sqlalchemy import DateTime
+from sqlmodel import Column, Field, Relationship, SQLModel, Text
+
 if TYPE_CHECKING:
-    from .contests import ContestSubmission
-    from .problem import Problem
-    from .contests import Contest
+    from .contests import Contest, ContestSubmission
     from .language import Language
+    from .problem import Problem
     from .user import User
 
 
@@ -31,24 +31,27 @@ class SubmissionStatusId(int, Enum):
 
 
 class SubmissionStatus(BaseModel):
-    id : SubmissionStatusId
+    id: SubmissionStatusId
     description: str | None = None
 
+
 class SubmissionBase(SQLModel, table=False):
-    stdout : str | None = None
+    stdout: str | None = None
     time: str | None = None
-    memory : int | None = None
+    memory: int | None = None
     stderr: str | None = None
     token: str
     compile_output: str | None = None
-    status : SubmissionStatusId
+    status: SubmissionStatusId
+
 
 class SubmissionAPI(SubmissionBase):
     status: SubmissionStatus
 
+
 class TestCase(SubmissionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    submission_id : int = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission_id: int = Field(foreign_key="submission.id", ondelete="CASCADE")
     submission: "Submission" = Relationship(back_populates="test_cases")
     stdin: str | None
     expected_output: str | None
@@ -58,12 +61,14 @@ class Submission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     source_code: str | None = Field(sa_column=Column(Text, nullable=False))
     problem_id: int = Field(foreign_key="problem.id", ondelete="CASCADE")
-    active_contest_id: int | None = Field(default=None,foreign_key="contest.id", ondelete="CASCADE")
-    language_id: int = Field(foreign_key="language.id",ondelete="CASCADE")
-    user_id : int = Field(foreign_key="user.id", ondelete="CASCADE")
+    active_contest_id: int | None = Field(
+        default=None, foreign_key="contest.id", ondelete="CASCADE"
+    )
+    language_id: int = Field(foreign_key="language.id", ondelete="CASCADE")
+    user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     status: SubmissionStatusId
-    total_testcases: int = Field(default=0) 
-    total_passed_cases : int = Field(default=0)
+    total_testcases: int = Field(default=0)
+    total_passed_cases: int = Field(default=0)
     max_memory: int | None = Field(default=None)
     total_time: str | None = Field(default=None)
     problem: "Problem" = Relationship(back_populates="submissions")
@@ -77,14 +82,16 @@ class Submission(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
+
 class SubmissionRequest(BaseModel):
     problem_id: int
     source_code: str
     language_id: int
     active_contest_id: int | None = None
 
+
 class SubmissionResponse(BaseModel):
-    submission_id : int
+    submission_id: int
     message: str
     total_test_cases: int
 
@@ -96,17 +103,17 @@ class Judge0RequestObject(BaseModel):
     language_id: int
     callback_url: str
 
+
 class Judge0SubmitResponseObject(BaseModel):
     token: str
 
 
 class SubmissionStatusBase(BaseModel):
-    
     total_testcases: int | None = None
-    total_passed_cases : int | None = None
+    total_passed_cases: int | None = None
     max_memory: int | None = None
     total_time: str | None = None
-    stdout : str | None = None
+    stdout: str | None = None
     stderr: str | None = None
     compile_output: str | None = None
     status: SubmissionStatusId | None = None
@@ -121,6 +128,7 @@ class SubmissionStatusResponse(SubmissionStatusBase):
 class SubmissionsPaginatedRequest(BaseModel):
     current_page: int
     problem_id: int
+
 
 class UserSubmissionsRequest(BaseModel):
     current_page: int
@@ -138,14 +146,14 @@ class SubmissionsPaginatedResponse(BaseModel):
 
 
 class ContestSubmissionsResponse(BaseModel):
-    id: int 
+    id: int
     problem_id: int
-    active_contest_id: int 
-    language_id: int 
+    active_contest_id: int
+    language_id: int
     status: SubmissionStatusId
-    total_testcases: int | None= None  
-    total_passed_cases : int | None = None
+    total_testcases: int | None = None
+    total_passed_cases: int | None = None
     max_memory: int | None = None
     total_time: str | None = None
     created_at: datetime
-    points: int 
+    points: int

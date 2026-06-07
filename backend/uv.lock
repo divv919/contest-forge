@@ -157,7 +157,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest" },
-    { name = "pytest-asyncio" },
+    { name = "pytest-asyncio", specifier = "==0.23.0" },
     { name = "ruff" },
 ]
 
@@ -692,14 +692,14 @@ wheels = [
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.22.0"
+version = "0.23.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/05/6e2e679644466425126aeca57165723cdd56dfd1971c0aec4bc063ec0009/pytest-asyncio-0.22.0.tar.gz", hash = "sha256:01da1bf94ff0b969cc8d760104f7c1011903d0d658bdaef0bbae769660a7fbc4", size = 37081, upload-time = "2023-10-31T07:26:41.969Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/f3/8fb382a48bded867e16e4f793ff69cd89a4e9c845c6173d28fcd34a9f12f/pytest-asyncio-0.23.0.tar.gz", hash = "sha256:236e89745b8be43b3b473640b523f26fe3c62a2afa7548e38532e9f201d22fc3", size = 43658, upload-time = "2023-12-03T09:45:55.729Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/3f/d0a76a3596d5e8dd42051db3fc7b09bcf901d409dddfe1a601299b5baec8/pytest_asyncio-0.22.0-py3-none-any.whl", hash = "sha256:c09905acb3b79827aace4c67fe15097daea1b363c00c8236875395414914bad3", size = 16024, upload-time = "2023-10-31T07:26:39.899Z" },
+    { url = "https://files.pythonhosted.org/packages/54/65/a4bf83365294e6aba4936aef0e6d7b87cfc5846d448392a980a862104179/pytest_asyncio-0.23.0-py3-none-any.whl", hash = "sha256:91ef405536331eb9971511aeb08225869985d800cf491015f7407044e7d1d7f8", size = 17040, upload-time = "2023-12-03T09:45:53.917Z" },
 ]
 
 [[package]]

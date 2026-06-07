@@ -1,16 +1,15 @@
-from pathlib import Path
-from ..db.schemas.problem import Difficulty
-from datetime import datetime, timezone
 import re
-from secrets import token_urlsafe
 import unicodedata
+from datetime import datetime, timezone
+from pathlib import Path
+from secrets import token_urlsafe
+
+from ..db.schemas.problem import Difficulty
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-PAGE = {
-    "MEDIUM" : 20
-}
+PAGE = {"MEDIUM": 20}
 
 FINALIZE_AND_INSERTION_QUERY = """
 INSERT INTO contest_points (
@@ -54,31 +53,36 @@ FROM (
 
 def get_problem_dir(slug: str):
     return ROOT / "problem-statements" / slug
-    
 
-def get_user_boilerplate_path(slug: str, language_code : str):
+
+def get_user_boilerplate_path(slug: str, language_code: str):
     base_problem_path = get_problem_dir(slug)
     boilerplate_paths = {
-    "cpp": base_problem_path / "boilerplate/cpp/user-cpp-boilerplate.cpp",
-    "js": base_problem_path / "boilerplate/js/user-js-boilerplate.js",
-    "py": base_problem_path / "boilerplate/py/user-py-boilerplate.py",
+        "cpp": base_problem_path / "boilerplate/cpp/user-cpp-boilerplate.cpp",
+        "js": base_problem_path / "boilerplate/js/user-js-boilerplate.js",
+        "py": base_problem_path / "boilerplate/py/user-py-boilerplate.py",
     }
     path = boilerplate_paths.get(language_code)
     return path
 
 
-def get_full_boilerplate_path(slug: str, language_code : str):
+def get_full_boilerplate_path(slug: str, language_code: str):
     base_problem_path = get_problem_dir(slug)
     boilerplate_paths = {
-    "cpp": base_problem_path / "boilerplate/cpp/full-cpp-boilerplate.cpp",
-    "js": base_problem_path / "boilerplate/js/full-js-boilerplate.js",
-    "py": base_problem_path / "boilerplate/py/full-py-boilerplate.py",
+        "cpp": base_problem_path / "boilerplate/cpp/full-cpp-boilerplate.cpp",
+        "js": base_problem_path / "boilerplate/js/full-js-boilerplate.js",
+        "py": base_problem_path / "boilerplate/py/full-py-boilerplate.py",
     }
     path = boilerplate_paths.get(language_code)
-    return  path
+    return path
 
 
-def get_points_from_submission_info(startTime : datetime, endTime: datetime, difficulty: Difficulty, solved_at: datetime | None = None) -> int:
+def get_points_from_submission_info(
+    startTime: datetime,
+    endTime: datetime,
+    difficulty: Difficulty,
+    solved_at: datetime | None = None,
+) -> int:
     base_points = {
         Difficulty.EASE: 100,
         Difficulty.MEDIUM: 150,
@@ -105,7 +109,7 @@ def get_points_from_submission_info(startTime : datetime, endTime: datetime, dif
     return points + time_bonus
 
 
-def sluggify(to_slug_from : str):
+def sluggify(to_slug_from: str):
     if not to_slug_from:
         return ""
 

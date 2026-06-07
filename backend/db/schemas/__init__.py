@@ -1,8 +1,8 @@
-from .user import User
-from .problem import Problem, Difficulty
-from .submission import SubmissionStatusId, SubmissionAPI
-from .contests import Contest, ContestProblems, ContestSubmission, ContestPoints
+from .contests import Contest, ContestPoints, ContestProblems, ContestSubmission
 from .language import Language
+from .problem import Difficulty, Problem
+from .submission import SubmissionAPI, SubmissionStatusId
+from .user import User
 
 __all__ = [
     "User",

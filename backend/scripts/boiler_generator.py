@@ -1,9 +1,7 @@
-
 import json
 import os
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[1]
 PROBLEM_STATEMENTS_DIR = ROOT / "problem-statements"
@@ -16,7 +14,8 @@ def get_problem_slug() -> str:
         if value:
             return value.strip()
     raise SystemExit(
-        "Missing problem slug. Set one of: PROBLEM_SLUG, problem_slug, PROBLEM_ID, problem_id, SLUG, slug."
+        "Missing problem slug. Set one of: PROBLEM_SLUG, problem_slug, PROBLEM_ID,"
+        " problem_id, SLUG, slug."
     )
 
 
@@ -110,11 +109,13 @@ def js_full_boilerplate(schema: dict[str, Any]) -> str:
             )
             if item_type == "int":
                 parser_lines.append(
-                    f"const {name} = {values_var}.slice(0, {length_var}).map((value) => Number(value));"
+                    f"const {name} = {values_var}"
+                    ".slice(0, {length_var}).map((value) => Number(value));"
                 )
             elif item_type == "bool":
                 parser_lines.append(
-                    f"const {name} = {values_var}.slice(0, {length_var}).map((value) => parseBool(value));"
+                    f"const {name} = {values_var}"
+                    ".slice(0, {length_var}).map((value) => parseBool(value));"
                 )
             else:
                 parser_lines.append(f"const {name} = {values_var}.slice(0, {length_var});")
@@ -135,7 +136,8 @@ def js_full_boilerplate(schema: dict[str, Any]) -> str:
 
     parser_block = "\n".join(f"    {line}" for line in parser_lines)
 
-    return f"""{js_bool_parser()}
+    return (
+        f"""{js_bool_parser()}
 
 <USER_CODE>
 
@@ -147,9 +149,11 @@ let index = 0;
 
 {parser_block}
 
-const result = {function_name}({', '.join(call_args)});
+const result = {function_name}({", ".join(call_args)});
 console.log({result_serializer});
-""".strip() + "\n"
+""".strip()
+        + "\n"
+    )
 
 
 def js_user_boilerplate(schema: dict[str, Any]) -> str:
@@ -177,12 +181,18 @@ def python_full_boilerplate(schema: dict[str, Any]) -> str:
             values_var = f"{name}_values"
             parser_lines.append(f"{length_var} = int(lines[index])")
             parser_lines.append("index += 1")
-            parser_lines.append(f"{values_var} = lines[index].split() if index < len(lines) else []")
+            parser_lines.append(
+                f"{values_var} = lines[index].split() if index < len(lines) else []"
+            )
             parser_lines.append("index += 1")
             if inner == "int":
-                parser_lines.append(f"{name} = [int(value) for value in {values_var}[:{length_var}]]")
+                parser_lines.append(
+                    f"{name} = [int(value) for value in {values_var}[:{length_var}]]"
+                )
             elif inner == "bool":
-                parser_lines.append(f"{name} = [parse_bool(value) for value in {values_var}[:{length_var}]]")
+                parser_lines.append(
+                    f"{name} = [parse_bool(value) for value in {values_var}[:{length_var}]]"
+                )
             else:
                 parser_lines.append(f"{name} = {values_var}[:{length_var}]")
         else:
@@ -202,7 +212,6 @@ def python_full_boilerplate(schema: dict[str, Any]) -> str:
     }.get(result_type, "str(result)")
 
     parser_block = "\n".join(f"    {line}" for line in parser_lines)
-    args = ", ".join(name for name, _ in inputs)
 
     return f"""{python_bool_parser()}
 
@@ -217,7 +226,7 @@ def main() -> None:
 
 {parser_block}
 
-    result = {function_name}({', '.join(call_args)})
+    result = {function_name}({", ".join(call_args)})
     print({result_serializer})
 
 
@@ -258,19 +267,22 @@ def cpp_full_boilerplate(schema: dict[str, Any]) -> str:
                 parser_lines.append(f"vector<int> {name};")
                 parser_lines.append(f"stringstream {name}Stream({values_var});")
                 parser_lines.append(
-                    f"for (int i = 0; i < {length_var}; ++i) {{ int value; {name}Stream >> value; {name}.push_back(value); }}"
+                    f"for (int i = 0; i < {length_var}; ++i) {{ int value; {name}Stream "
+                    f">> value; {name}.push_back(value); }}"
                 )
             elif inner == "bool":
                 parser_lines.append(f"vector<bool> {name};")
                 parser_lines.append(f"stringstream {name}Stream({values_var});")
                 parser_lines.append(
-                    f"for (int i = 0; i < {length_var}; ++i) {{ string value; {name}Stream >> value; {name}.push_back(parseBool(value)); }}"
+                    f"for (int i = 0; i < {length_var}; ++i) {{ string value; {name}Stream "
+                    f">> value; {name}.push_back(parseBool(value)); }}"
                 )
             else:
                 parser_lines.append(f"vector<string> {name};")
                 parser_lines.append(f"stringstream {name}Stream({values_var});")
                 parser_lines.append(
-                    f"for (int i = 0; i < {length_var}; ++i) {{ string value; {name}Stream >> value; {name}.push_back(value); }}"
+                    f"for (int i = 0; i < {length_var}; ++i) {{ string value; {name}Stream "
+                    f">> value; {name}.push_back(value); }}"
                 )
         else:
             if kind == "int":
@@ -303,7 +315,7 @@ int main() {{
 
 {parser_block}
 
-    auto result = {function_name}({', '.join(call_args)});
+    auto result = {function_name}({", ".join(call_args)});
     {result_printer}
     return 0;
 }}
@@ -317,7 +329,7 @@ def cpp_user_boilerplate(schema: dict[str, Any]) -> str:
     return f"""#include <bits/stdc++.h>
 using namespace std;
 
-{cpp_type(schema['result']['type'])} {function_name}({signature}) {{
+{cpp_type(schema["result"]["type"])} {function_name}({signature}) {{
     // Write your code here
 }}
 """

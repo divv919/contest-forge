@@ -4,13 +4,9 @@ from ..dependencies.db_deps import get_session
 
 
 def insert_problem_statements(session):
-    from ..db.schemas.problem import Problem, Difficulty
+    from ..db.schemas.problem import Difficulty, Problem
 
-    existing_slugs = set(
-        session.exec(
-            select(Problem.slug)
-        ).all()
-    )
+    existing_slugs = set(session.exec(select(Problem.slug)).all())
 
     problems = [
         Problem(
@@ -19,7 +15,7 @@ def insert_problem_statements(session):
             slug="two_sum",
             description="Given two numbers, calculate and return their sum.",
             test_cases_count=2,
-            solution="function summation(a, b) {\r\n    // Write your code here\r\n}\r\n"
+            solution="function summation(a, b) {\r\n    // Write your code here\r\n}\r\n",
         ),
         Problem(
             name="Three Sum",
@@ -27,25 +23,22 @@ def insert_problem_statements(session):
             slug="three_sum",
             description="Given three numbers, calculate and return their sum.",
             test_cases_count=3,
-            solution="function sum_three(a, b, c) {\r\n    // Write your code here\r\n    return a + b + c\r\n}\r\n"
-        )
+            solution="function sum_three(a, b, c) {\r\n    // Write your code here\r\n"
+            "    return a + b + c\r\n}\r\n",
+        ),
     ]
 
-    session.add_all([
-        problem
-        for problem in problems
-        if problem.slug not in existing_slugs
-    ])
+    session.add_all([problem for problem in problems if problem.slug not in existing_slugs])
 
 
 def insert_demo_user(session):
-    from ..db.schemas import User
-    from pwdlib import PasswordHash
     import os
 
-    existing_user = session.exec(
-        select(User).where(User.username == "Divv919")
-    ).first()
+    from pwdlib import PasswordHash
+
+    from ..db.schemas import User
+
+    existing_user = session.exec(select(User).where(User.username == "Divv919")).first()
 
     if existing_user:
         return
@@ -56,9 +49,7 @@ def insert_demo_user(session):
         User(
             username="Divv919",
             email="demo@example.com",
-            password=password_hash.hash(
-                os.getenv("DEMO_USER_PASSWORD", "321321")
-            ),
+            password=password_hash.hash(os.getenv("DEMO_USER_PASSWORD", "321321")),
             provider="local",
             provider_user_id="Divv919",
         )
@@ -68,11 +59,7 @@ def insert_demo_user(session):
 def insert_languages(session):
     from ..db.schemas import Language
 
-    existing_names = set(
-        session.exec(
-            select(Language.name)
-        ).all()
-    )
+    existing_names = set(session.exec(select(Language.name)).all())
 
     languages = [
         Language(name="JavaScript", judge0id=63),
@@ -80,11 +67,7 @@ def insert_languages(session):
         Language(name="CPP", judge0id=54),
     ]
 
-    session.add_all([
-        language
-        for language in languages
-        if language.name not in existing_names
-    ])
+    session.add_all([language for language in languages if language.name not in existing_names])
 
 
 def seed():
@@ -102,6 +85,7 @@ def seed():
 
     finally:
         session.close()
+
 
 if __name__ == "__main__":
     print("Seeding initial data...")

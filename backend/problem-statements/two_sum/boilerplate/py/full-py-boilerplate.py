@@ -1,8 +1,9 @@
+
 def parse_bool(value: str) -> bool:
     normalized = value.strip().lower()
     return normalized in {"true", "1"}
 
-<USER_CODE>
+<USER_CODE>  
 
 def main() -> None:
     import sys
