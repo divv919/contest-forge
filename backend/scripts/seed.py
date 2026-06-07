@@ -1,8 +1,16 @@
-from backend.dependencies.db_deps import get_session
+from sqlmodel import select
+
+from ..dependencies.db_deps import get_session
 
 
 def insert_problem_statements(session):
-    from backend.db.schemas.problem import Problem, Difficulty
+    from ..db.schemas.problem import Problem, Difficulty
+
+    existing_slugs = set(
+        session.exec(
+            select(Problem.slug)
+        ).all()
+    )
 
     problems = [
         Problem(
@@ -22,36 +30,62 @@ def insert_problem_statements(session):
             solution="function sum_three(a, b, c) {\r\n    // Write your code here\r\n    return a + b + c\r\n}\r\n"
         )
     ]
-    session.add_all(problems)
-    session.commit()
+
+    session.add_all([
+        problem
+        for problem in problems
+        if problem.slug not in existing_slugs
+    ])
 
 
 def insert_demo_user(session):
-    from backend.db.schemas import User
+    from ..db.schemas import User
     from pwdlib import PasswordHash
-    import os 
-    
-    password_hash = PasswordHash.recommended()
-    password = os.getenv("DEMO_USER_PASSWORD", "321321")
-    hashed_password = password_hash.hash(password)
-    already_exists = session.query(User).filter_by(username="Divv919").first()
-    if already_exists:
+    import os
+
+    existing_user = session.exec(
+        select(User).where(User.username == "Divv919")
+    ).first()
+
+    if existing_user:
         return
-    demo_user = User(username="Divv919", email="demo@example.com",password=hashed_password, provider="local", provider_user_id="Divv919")
-    session.add(demo_user)
-    session.commit()
+
+    password_hash = PasswordHash.recommended()
+
+    session.add(
+        User(
+            username="Divv919",
+            email="demo@example.com",
+            password=password_hash.hash(
+                os.getenv("DEMO_USER_PASSWORD", "321321")
+            ),
+            provider="local",
+            provider_user_id="Divv919",
+        )
+    )
 
 
 def insert_languages(session):
-    from backend.db.schemas import Language
+    from ..db.schemas import Language
+
+    existing_names = set(
+        session.exec(
+            select(Language.name)
+        ).all()
+    )
 
     languages = [
         Language(name="JavaScript", judge0id=63),
         Language(name="Python", judge0id=71),
-        Language(name="CPP", judge0id=54)
+        Language(name="CPP", judge0id=54),
     ]
-    session.add_all(languages)
-    session.commit()
+
+    session.add_all([
+        language
+        for language in languages
+        if language.name not in existing_names
+    ])
+
 
 def seed():
     session = next(get_session())
@@ -59,6 +93,13 @@ def seed():
         insert_problem_statements(session)
         insert_demo_user(session)
         insert_languages(session)
+
+        session.commit()
+
+    except Exception:
+        session.rollback()
+        raise
+
     finally:
         session.close()
 
