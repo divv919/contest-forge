@@ -4,12 +4,12 @@ COPY --from=docker.io/astral/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY ./requirements.txt .
+COPY uv.lock pyproject.toml ./
 
 RUN uv sync --frozen
 
 COPY . .
 
-CMD ["fastapi" , "dev", "--host", "0.0.0.0", "--port", "80" ]
+CMD ["uv", "run", "fastapi" , "dev", "--host", "0.0.0.0", "--port", "80" ]
 
 

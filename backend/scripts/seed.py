@@ -1,5 +1,6 @@
 from sqlmodel import select
 
+from ..config import settings
 from ..dependencies.db_deps import get_session
 
 
@@ -32,7 +33,6 @@ def insert_problem_statements(session):
 
 
 def insert_demo_user(session):
-    import os
 
     from pwdlib import PasswordHash
 
@@ -49,7 +49,7 @@ def insert_demo_user(session):
         User(
             username="Divv919",
             email="demo@example.com",
-            password=password_hash.hash(os.getenv("DEMO_USER_PASSWORD", "321321")),
+            password=password_hash.hash(settings.demo_user_password),
             provider="local",
             provider_user_id="Divv919",
         )

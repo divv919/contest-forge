@@ -1,15 +1,17 @@
-import os
 from datetime import datetime, timedelta
 
 import jwt
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
+from ..config import settings
 from .exceptions import invalid_creds_exc
 
-SECRET_KEY = os.getenv("SECRET_KEY", "DEFAULT_SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
+SECRET_KEY = (
+    settings.secret_key or "716ee0a822d92d9b76092660b83a31ef39eacf64066003d84450cea5d35be746"
+)
 
+ALGORITHM = settings.algorithm
 oauth2scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 

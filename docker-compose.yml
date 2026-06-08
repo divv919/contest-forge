@@ -35,7 +35,7 @@ services:
     image: postgres:16.2
     env_file: ./backend/judge0.conf
     volumes:
-      - data:/var/lib/postgresql/data/
+      - data:/var/lib/postgresql/data/:ro
     <<: *default-logging
     restart: always
     healthcheck:
@@ -59,7 +59,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    command: ["alembic", "upgrade", "head"]
+    command: ["uv", "run", "alembic", "upgrade", "head"]
     depends_on:
       db:
         condition: service_healthy
@@ -70,7 +70,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend:/app
+      - ./backend:/app:ro
+      - /app/.venv
     ports:
       - 80:80
     depends_on:
@@ -88,7 +89,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app:ro
       - /app/node_modules
     ports:
       - 3000:3000
@@ -110,5 +111,13 @@ services:
     command: ["python", "-m", "app.scripts.seed"]
     env_file: ./backend/.env
 
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    
+    command: ["uv", "run", "pytest"]
+    env_file: ./backend/.env
+    
 volumes:
   data:
