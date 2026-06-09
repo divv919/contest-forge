@@ -35,7 +35,7 @@ services:
     image: postgres:16.2
     env_file: ./backend/judge0.conf
     volumes:
-      - data:/var/lib/postgresql/data/:ro
+      - data:/var/lib/postgresql/data/
     <<: *default-logging
     restart: always
     healthcheck:
@@ -44,7 +44,21 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
-
+  db-test:
+    image: postgres:16.2
+    profiles:
+      - test
+    env_file: ./backend/.env.test
+    <<: *default-logging
+    restart: always
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
   redis:
     image: redis:7.2.4
     command:
@@ -55,7 +69,9 @@ services:
     <<: *default-logging
     restart: always
 
-  migrate:
+  migrate-dev:
+    profiles:
+      - dev
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
@@ -64,8 +80,25 @@ services:
       db:
         condition: service_healthy
     restart: no
+    env_file:
+      - ./backend/.env
+  migrate-test:
+    profiles:
+      - test
+    env_file:
+      - ./backend/.env.test
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    depends_on:
+      db-test:
+        condition: service_healthy
+    restart: no
 
   fastapi-starter:
+    profiles:
+      - dev
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
@@ -75,7 +108,7 @@ services:
     ports:
       - 80:80
     depends_on:
-      migrate:
+      migrate-dev:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost/health').getcode()==200 else sys.exit(1)"]
@@ -83,11 +116,15 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+    env_file:
+      - .backend/.env
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    profiles:
+      - dev
     volumes:
       - ./frontend:/app:ro
       - /app/node_modules
@@ -100,24 +137,42 @@ services:
       fastapi-starter:
         condition: service_healthy
 
-  seed:
+  seed-dev:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
+    profiles:
+      - dev
     depends_on:
-      migrate:
+      migrate-dev:
         condition: service_completed_successfully
     working_dir: /
-    command: ["python", "-m", "app.scripts.seed"]
+    command: ["app/.venv/bin/python", "-m", "app.scripts.seed"]
     env_file: ./backend/.env
+
+  seed-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    profiles:
+      - test
+    depends_on:
+      migrate-test:
+        condition: service_completed_successfully
+    working_dir: /
+    command: ["app/.venv/bin/python", "-m", "app.scripts.seed"]
+    env_file: ./backend/.env.test
 
   test:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    
+    profiles:
+      - test
     command: ["uv", "run", "pytest"]
-    env_file: ./backend/.env
-    
+    env_file: ./backend/.env.test
+    depends_on:
+      seed-test:
+        condition: service_completed_successfully
 volumes:
   data:

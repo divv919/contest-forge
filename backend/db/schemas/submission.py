@@ -134,7 +134,7 @@ class UserSubmissionsRequest(BaseModel):
     current_page: int
 
 
-class SubmissionsPaginatedResponse(BaseModel):
+class SubmissionsPaginatedData(BaseModel):
     id: int | None = None
     problem_id: int | None = None
     active_contest_id: int | None = None
@@ -143,6 +143,12 @@ class SubmissionsPaginatedResponse(BaseModel):
     max_memory: int | None = None
     total_time: str | None = None
     created_at: datetime | None = None
+
+
+class ProblemSubmissionsResponse(BaseModel):
+    data: list[SubmissionsPaginatedData]
+    total_pages: int = 1
+    current_page: int = 1
 
 
 class ContestSubmissionsResponse(BaseModel):

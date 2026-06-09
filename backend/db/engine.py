@@ -1,5 +1,9 @@
 from sqlmodel import create_engine
 
-db_url = "postgresql+pg8000://judge0:judge0postgres@db:5432/judge0"
+from ..config import get_settings
+
+settings = get_settings()
+
+db_url = settings.database_url
 
 engine = create_engine(db_url, echo=True)

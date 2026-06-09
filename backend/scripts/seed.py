@@ -1,7 +1,9 @@
 from sqlmodel import select
 
-from ..config import settings
+from ..config import get_settings
 from ..dependencies.db_deps import get_session
+
+settings = get_settings()
 
 
 def insert_problem_statements(session):

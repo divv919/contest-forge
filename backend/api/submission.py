@@ -1,9 +1,10 @@
+import math
 from datetime import datetime, timezone
 from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Body, HTTPException, status
-from sqlmodel import select
+from sqlmodel import func, select
 
 from ..db.schemas import Contest
 from ..db.schemas.contests import ContestSubmission
@@ -12,12 +13,13 @@ from ..db.schemas.problem import Problem
 from ..db.schemas.submission import (
     Judge0RequestObject,
     Judge0SubmitResponseObject,
+    ProblemSubmissionsResponse,
     Submission,
     SubmissionAPI,
     SubmissionRequest,
     SubmissionResponse,
+    SubmissionsPaginatedData,
     SubmissionsPaginatedRequest,
-    SubmissionsPaginatedResponse,
     SubmissionStatusBase,
     SubmissionStatusId,
     SubmissionStatusResponse,
@@ -409,7 +411,7 @@ def get_submission_status(
     )
 
 
-@router.post("/problem_submissions", response_model=list[SubmissionsPaginatedResponse])
+@router.post("/problem_submissions", response_model=ProblemSubmissionsResponse)
 def get_problem_submissions(
     session: SessionDep, user: UserDep, body: Annotated[SubmissionsPaginatedRequest, Body()]
 ):
@@ -420,19 +422,30 @@ def get_problem_submissions(
         .offset(PAGE["MEDIUM"] * (body.current_page - 1))
         .limit(PAGE["MEDIUM"])
     ).all()
+
+    total_count = session.exec(
+        select(func.count())
+        .select_from(Submission)
+        .where(Submission.user_id == user.id)
+        .where(Submission.problem_id == body.problem_id)
+    ).one()
+    total_pages = math.ceil(total_count / PAGE["MEDIUM"])
     if submissions is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No submission found for this problem"
         )
-    return [
-        SubmissionsPaginatedResponse(**submission.model_dump(), language=submission.language.name)
+    data = [
+        SubmissionsPaginatedData(**submission.model_dump(), language=submission.language.name)
         for submission in submissions
         if submission.active_contest_id is None
         or submission.active_contest.endTime < datetime.now(tz=timezone.utc)
     ]
+    return ProblemSubmissionsResponse(
+        data=data, total_pages=total_pages, current_page=body.current_page
+    )
 
 
-@router.post("/my_submissions", response_model=list[SubmissionsPaginatedResponse])
+@router.post("/my_submissions", response_model=ProblemSubmissionsResponse)
 def get_user_submissions(
     user: UserDep, session: SessionDep, body: Annotated[UserSubmissionsRequest, Body()]
 ):
@@ -448,8 +461,14 @@ def get_user_submissions(
             status_code=status.HTTP_404_NOT_FOUND, detail="No submissions found for user"
         )
 
-    return [
-        SubmissionsPaginatedResponse(
+    total_count = session.exec(
+        select(func.count()).select_from(Submission).where(Submission.user_id == user.id)
+    ).one()
+
+    total_pages = math.ceil(total_count / PAGE["MEDIUM"])
+
+    data = [
+        SubmissionsPaginatedData(
             **submission.model_dump(),
             language=submission.language.name,
             created_at=submission.created_at,
@@ -458,6 +477,10 @@ def get_user_submissions(
         if submission.active_contest_id is None
         or submission.active_contest.endTime < datetime.now(tz=timezone.utc)
     ]
+
+    return ProblemSubmissionsResponse(
+        data=data, current_page=body.current_page, total_pages=total_pages
+    )
 
 
 @router.post("/submission_info")
@@ -579,3 +602,5 @@ def get_submission_info(
 # in case of retries of webhook the total count can give wrong value
 # Use relationships to get data instead of quering using foreign key
 # Add lock on submission webhook so that every test case for a submission is processed one at a time
+# Send total pages for pagination and add next and previous page in the response
+# during add submissions in active contest dont send total test cases info

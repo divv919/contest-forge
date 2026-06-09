@@ -4,8 +4,10 @@ import jwt
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from ..config import settings
+from ..config import get_settings
 from .exceptions import invalid_creds_exc
+
+settings = get_settings()
 
 SECRET_KEY = (
     settings.secret_key or "716ee0a822d92d9b76092660b83a31ef39eacf64066003d84450cea5d35be746"

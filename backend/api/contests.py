@@ -299,3 +299,4 @@ def get_contest_ranking(slug: str, session: SessionDep, page: int = 1):
 # Add max and min problem number for a contest
 # Make sure the get user map can be handled by a redis cache layer or some other in memory so that
 # we dont have to touch db everytime we need users
+# Pagination on past contests
