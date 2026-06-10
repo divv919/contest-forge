@@ -117,7 +117,7 @@ services:
       retries: 10
       start_period: 15s
     env_file:
-      - .backend/.env
+      - ./backend/.env
 
   frontend:
     build:
@@ -126,8 +126,9 @@ services:
     profiles:
       - dev
     volumes:
-      - ./frontend:/app:ro
+      - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     ports:
       - 3000:3000
     environment:
